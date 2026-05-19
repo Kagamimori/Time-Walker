@@ -199,10 +199,10 @@ public class MCscript : MonoBehaviour
             JumpNum = 0;
         }
         else if(IsJumping && Time.time-JumpTime<JumpAddTime){
-            rb.velocity+=new Vector2(0,9f*Time.deltaTime);
+            rb.velocity+=new Vector2(0,4f*Time.deltaTime);
         }
         else if(!IsGround){
-            rb.velocity-=new Vector2(0,15f*Time.deltaTime);
+            rb.velocity-=new Vector2(0,8f*Time.deltaTime);
             IsJumping=false;
         }
 

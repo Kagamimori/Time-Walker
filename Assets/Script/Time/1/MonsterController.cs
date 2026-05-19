@@ -285,7 +285,7 @@ public class MonsterController : MonoBehaviour
     void Flip()
     {
         isFacingRight = !isFacingRight;
-        transform.localScale = new Vector3(isFacingRight ? 8 : -8, 6, 1);//给你调了比例
+        transform.localScale = new Vector3(isFacingRight ? 4 : -4, 4, 1);//给你调了比例
     }
     void FacePlayer()
     {

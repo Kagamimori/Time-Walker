@@ -30,23 +30,25 @@ public class BITE : MonoBehaviour
     //     }
     // }
 
+    private SpriteRenderer SR;
     // Start is called before the first frame update
     void Start()
     {
         anim=GetComponent<Animator>();
         PC2D=GetComponent<PolygonCollider2D>();
+        SR=GetComponent<SpriteRenderer>();
     }
 
     // Update is called once per frame
     void Update()
     {
         transform.position=new Vector2(MC.transform.position.x,MC.transform.position.y+2f);
-        anim.SetInteger("Eatthing",MC.eatthing);
-        anim.SetBool("Openmouth",MC.Closemouth);
-        anim.SetBool("ShortClick",MC.InMist&&Time.time-MC.LastClickTime<0.2f);
+
         MC.Closemouth=false;
     }
     public void Bite(float BiteDirecion){
+        SR.enabled = true;
+        Invoke("SRDisappear", 0.5f);
         if(MC.eatthing!=0){
             return;
         }
@@ -157,6 +159,10 @@ public class BITE : MonoBehaviour
         // if(biteGround&&MC.eatthing==0){
         //     MC.BiteGround(rate);
         // }
+    }
+    public void SRDisappear()
+    {
+        SR.enabled = false;
     }
     public void MCDeath(){
         transform.localScale=Vector3.zero;

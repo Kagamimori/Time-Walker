@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class NewBud : MonoBehaviour, ITimeControlable
 {
-    public bool CanReserveTime { get; set; }
+    public bool CanReserveTime { get; set; } = true;
     [System.Serializable]
     public struct SporeMotionData
     {
@@ -33,7 +33,7 @@ public class NewBud : MonoBehaviour, ITimeControlable
     [Header("重置开关")]
     [SerializeField] private bool resetOnReverseComplete = true; // 逆向归零后是否回到未激活状态并销毁孢子
 
-    private bool isActivated;
+    public bool isActivated;
     private float currentTime;
     private int bloomStateHash;
 
