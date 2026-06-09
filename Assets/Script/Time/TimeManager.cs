@@ -11,6 +11,7 @@ public class TimeManager : MonoBehaviour
     private RaycastHit2D LastMouseHit;
     private RaycastHit2D PressedMouseHit;
     public bool IsTimeReversing;
+    public float MPConsumeRate;
     public static TimeManager Instance { get; private set; }
     private void Awake()
     {
@@ -42,19 +43,21 @@ public class TimeManager : MonoBehaviour
                 if (Input.GetKey(KeyCode.Q))
                 {
                     ITimeControlable timeControlable = MouseHit.collider.GetComponent<ITimeControlable>();
-                    if (timeControlable != null && timeControlable.CanReserveTime)
+                    if (timeControlable != null && timeControlable.CanReserveTime && PlayerManager.Instance.PlayerMP > 0)
                     {
                         timeControlable.ChangeCurrentTime(-Time.deltaTime);
                         IsTimeReversing = true;
+                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP-Time.deltaTime * MPConsumeRate;
                     }
                 }
                 else if (Input.GetKey(KeyCode.E))
                 {
                     ITimeControlable timeControlable = MouseHit.collider.GetComponent<ITimeControlable>();
-                    if (timeControlable != null && timeControlable.CanReserveTime)
+                    if (timeControlable != null && timeControlable.CanReserveTime && PlayerManager.Instance.PlayerMP > 0)
                     {
                         timeControlable.ChangeCurrentTime(Time.deltaTime);
                         IsTimeReversing = true;
+                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP-Time.deltaTime * MPConsumeRate;
                     }
                 }
                 else

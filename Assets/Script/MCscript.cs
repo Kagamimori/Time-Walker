@@ -1,12 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Security.Principal;
 using UnityEngine;
 using UnityEngine.Events;
-//1111
-
 public class MCscript : MonoBehaviour
 {
     public Rigidbody2D rb;
@@ -199,10 +194,10 @@ public class MCscript : MonoBehaviour
             JumpNum = 0;
         }
         else if(IsJumping && Time.time-JumpTime<JumpAddTime){
-            rb.velocity+=new Vector2(0,4f*Time.deltaTime);
+            rb.velocity+=new Vector2(0,5f*Time.deltaTime);
         }
         else if(!IsGround){
-            rb.velocity-=new Vector2(0,8f*Time.deltaTime);
+            rb.velocity-=new Vector2(0,15f*Time.deltaTime);
             IsJumping=false;
         }
 
@@ -253,29 +248,30 @@ public class MCscript : MonoBehaviour
         if(IsDashing){
             float dashcal=(Math.Abs(Xspeed)-Movespeed)/(dashspeed-Movespeed);
             if(10-2*dashcal>2f){
-            transform.localScale= ScaleRate*new Vector2(dashdirection*(10+3*dashcal),10-2*dashcal);
+            transform.localScale= ScaleRate*new Vector2(dashdirection*(1+0.3f*dashcal),1-0.2f*dashcal);
             }
             else{
-                transform.localScale= ScaleRate*new Vector2(dashdirection*(10+3*dashcal),2);
+                transform.localScale= ScaleRate*new Vector2(dashdirection*(10+0.3f*dashcal),0.2f);
             }
         }
         else {
             if (Math.Abs(Xspeed)>=Movespeed-0.3f){                 //行动时的角色缩放变换,在想改IsDashing时，还要改1/-1的dashdirection
             LocalScaleLock=Xdirection;
-            transform.localScale= ScaleRate*new Vector2(10*LocalScaleLock,10);
+            transform.localScale= ScaleRate*new Vector2(LocalScaleLock,1);
             }
             else if(Math.Abs(Xspeed)<=0.3f){
-                transform.localScale= ScaleRate*new Vector2(10*LocalScaleLock,10);
+                transform.localScale= ScaleRate*new Vector2(LocalScaleLock,1);
             }
             else if(Xdirection!=0 && LocalScaleLock+Xdirection==0){
-                transform.localScale = ScaleRate*new Vector2(-10*Xdirection+20*(Xspeed/Movespeed),10);
+                transform.localScale = ScaleRate*new Vector2(-Xdirection+2*(Xspeed/Movespeed),1);
             }
 
         }
-        //state=Anim.wait;
-        //if(Movecontroller!=0){
-        //    state=Anim.run;
-        //}
+        state = Anim.wait;
+        if (Movecontroller != 0)
+        {
+            state = Anim.run;
+        }
         //if(!IsGround){
         //    if(rb.velocity.y>0.3f){
         //        state=Anim.jump;
@@ -294,29 +290,9 @@ public class MCscript : MonoBehaviour
         //    else{
         //        state=Anim.open;
         //    }
-            
+
         //}
-        //anim.SetInteger("State", (int)state);
-
-        if (IsDecreasing){
-            eatscore-=Time.deltaTime*DecreasingSpeed;             //得分衰减
-        }
-        if(eatscore<0){
-            eatscore=0;
-        }
-        if(eatscore>MaxScore){
-            if(MoreScore<RebirthNeededScore){
-                float _score=(eatscore-MaxScore)-(eatscore-MaxScore)%3;
-                if(MoreScore+_score>=RebirthNeededScore){
-                    _score=RebirthNeededScore-MoreScore;
-                    CanRebirth=true;
-                }
-                MoreScore+=_score;
-                MoreScoreEvent.Invoke(_score);
-            }
-            eatscore=MaxScore;
-        }
-
+        anim.SetInteger("State", (int)state);
 
 
         if (!IsInPlatform && (LF.PlatForm != null || RF.PlatForm != null)&&Movecontroller==0)

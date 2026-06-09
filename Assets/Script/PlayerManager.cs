@@ -8,6 +8,8 @@ public class PlayerManager : MonoBehaviour
     public float PlayerMaxHP;
     private float _playerHP;
     public NewHeart newHeartHP;
+
+    public bool TestMode;
     public float PlayerHP
     {
         get
@@ -20,9 +22,26 @@ public class PlayerManager : MonoBehaviour
             newHeartHP.SetValue(value/PlayerMaxHP);
         }
     }
+
+    public float PlayerMaxMP;
+    private float _playerMP;
+    public NewHeart newHeartMP;
+    public float PlayerMP
+    {
+        get
+        {
+            return _playerMP;
+        }
+        set
+        {
+            _playerMP = value;
+            newHeartMP.SetValue(value/PlayerMaxMP);
+        }
+    }
     [Range(0f,100f)]
     public float TestHP;
-
+    [Range(0f, 100f)]
+    public float TestMP;
 
     public static PlayerManager Instance { get; private set; }
     void Awake()
@@ -39,15 +58,23 @@ public class PlayerManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        TestHP = PlayerMaxHP;
+        PlayerHP = PlayerMaxHP;
+        PlayerMP = PlayerMaxMP;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (PlayerHP != TestHP)
+        if (TestMode)
         {
-            PlayerHP = TestHP;
+            if (PlayerHP != TestHP)
+            {
+                PlayerHP = TestHP;
+            }
+            if (PlayerMP != TestMP)
+            {
+                PlayerMP = TestMP;
+            }
         }
     }
 }
