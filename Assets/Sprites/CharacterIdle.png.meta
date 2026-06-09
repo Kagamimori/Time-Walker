@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 11c43158d7068594d98ad79827f19a2c
+guid: 65831ba3a22bced4fa1accd612ddd4e3
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -43,7 +43,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -95,7 +95,91 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: Sprite-zj dj_0
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 36
+        width: 20
+        height: 41
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c5cfb5ebed59ec14c971ae29f6444770
+      internalID: -1594778319
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprite-zj dj_1
+      rect:
+        serializedVersion: 2
+        x: 273
+        y: 36
+        width: 21
+        height: 41
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4f8520f836dce1e4685cc1909e0dc44a
+      internalID: 1990490320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprite-zj dj_2
+      rect:
+        serializedVersion: 2
+        x: 453
+        y: 36
+        width: 21
+        height: 40
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: edd1d430e32f1e1499d0809eb61f7a57
+      internalID: -183036570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprite-zj dj_3
+      rect:
+        serializedVersion: 2
+        x: 633
+        y: 36
+        width: 21
+        height: 40
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 770f34391d256234b96f78b27bba1114
+      internalID: 1013364546
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -106,7 +190,11 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Sprite-zj dj_0: -1594778319
+      Sprite-zj dj_1: 1990490320
+      Sprite-zj dj_2: -183036570
+      Sprite-zj dj_3: 1013364546
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
