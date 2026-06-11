@@ -67,7 +67,6 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMaxMP;
         StopAllCoroutines();
         if (enemyController != null)
             enemyController.enabled = false;  //Í£½Å±¾

@@ -12,12 +12,16 @@ public class MCscript : MonoBehaviour
     public float Movespeed;
     [SerializeField]private float Accelerationspeed;
     [SerializeField]private float Jumpspeed;
+
+    [SerializeField] private float JumpAcceleration;
+    [SerializeField] private float FallAcceleration;
+
     [SerializeField]private float dashspeed;
     [SerializeField]private float DashCD;
     [SerializeField]private float JumpAddTime;
     [SerializeField]private float BiteGroundSpeed;
     private float JumpTime;
-    private bool IsJumping;
+    public bool IsJumping;
     public MCFoot RF;
     public MCFoot LF;
     private bool Candash=true;
@@ -26,6 +30,7 @@ public class MCscript : MonoBehaviour
     public bool IsDashing=false;
 
     private float dashdirection;
+    private float LastDashTime = -1;
     public int Xdirection;
     private float Xspeed;
 
@@ -36,34 +41,14 @@ public class MCscript : MonoBehaviour
     public enum Anim{wait,run,jump,fall,dash,open,openrun};
     public Anim state;
 
-    public bool IsReading=false;
+
     [Header("咬合")]
     public bool Openmouth=false;
     public bool Closemouth=false;
-    public float NeededClickTime;
-    public float LastClickTime;
-    public float OriginClickTime;
-    public bool InMist=false;
-    [Header("一些事件")]
-    public UnityEvent<float> MoreScoreEvent;
-    [Header("吃食的事")]
+
     public BITE bite;
     public float BiteDirection;
-    public int eatthing=0;     // 0空1苹果2香蕉3西瓜4橘子5牌子
-    public bool HaveKey=false;
-    public float eatscore=0;
-    [SerializeField]private float DecreasingSpeed;
-    public float AddScoreAmount;
-    private Coroutine decreasecoroutine;
-    private bool IsDecreasing=true;
-    public float MaxScore;
-    public float MoreScore;
-    public float RebirthNeededScore;
     
-    [Header("活")]
-    public bool CanRebirth=false;
-    public bool IsDead=false;
-    public float RebirthInvincibleTime;
     [Header("其他玩意的调用")]
     public MCCollider MCcollider;
     public GameObject MCshade;
@@ -79,13 +64,13 @@ public class MCscript : MonoBehaviour
     private Transform currentPlatform;
     private Vector3 PlatformLastPos;
     private float PlatformXSpeed;
+    public bool IsInGrass = false;
     // Start is called before the first frame update
     void Start()
     {
         rb=GetComponent<Rigidbody2D>();
         anim=GetComponent<Animator>();
         spriteRenderer=GetComponent<SpriteRenderer>();
-        LastClickTime=Time.deltaTime;
         inputManager = InputManager.Instance;
         playerManager = PlayerManager.Instance;
         inputManager.GetNormalKeyEvent("Jump").AddListener(Jump);
@@ -101,9 +86,6 @@ public class MCscript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(IsDead||IsReading){
-            return;
-        }
         // Movespeed=OringinMoveSpeed*(1+eatscore/MaxScore/2);
         Movespeed =OringinMoveSpeed;
         Movecontroller=Input.GetAxisRaw("Horizontal");
@@ -193,12 +175,22 @@ public class MCscript : MonoBehaviour
         if(IsGround){
             JumpNum = 0;
         }
-        else if(IsJumping && Time.time-JumpTime<JumpAddTime){
-            rb.velocity+=new Vector2(0,5f*Time.deltaTime);
+        else if(IsInGrass)
+        {
+            if (IsJumping)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, 5f);
+            }
+            else
+            {
+                rb.velocity -= new Vector2(0, 0.4f*FallAcceleration * Time.deltaTime);
+            }
         }
-        else if(!IsGround){
-            rb.velocity-=new Vector2(0,15f*Time.deltaTime);
-            IsJumping=false;
+        else if(IsJumping && Time.time-JumpTime<JumpAddTime){
+            rb.velocity+=new Vector2(0,JumpAcceleration*Time.deltaTime);
+        }
+        if(!IsGround&&!IsInGrass){
+            rb.velocity-=new Vector2(0,FallAcceleration*Time.deltaTime);
         }
 
 
@@ -210,7 +202,6 @@ public class MCscript : MonoBehaviour
             
             Openmouth = true;
             Closemouth = true;
-            LastClickTime = Time.time;
             if (Input.GetKey(KeyCode.W))
             {
                 BiteDirection = 1;
@@ -333,6 +324,10 @@ public class MCscript : MonoBehaviour
     }
     private void Dash()
     {
+        if (Time.time - LastDashTime < DashCD)
+        {
+            return;
+        }
         GenerateShade();
         anim.SetInteger("State", 4);
         dashdirection = Math.Sign(transform.localScale.x);
@@ -343,6 +338,7 @@ public class MCscript : MonoBehaviour
         }
         rb.velocity = new Vector2(dashspeed * dashdirection, 0);
         IsDashing = true;
+        LastDashTime = Time.time;
     }
     public void BiteGround(float rate){
         if (!(MouseAngle<-110||MouseAngle>110))
@@ -407,20 +403,11 @@ public class MCscript : MonoBehaviour
                 break;
         }
     }
-    public void AddScore(float addscoreRate){
-        eatscore+=addscoreRate*AddScoreAmount;
-        decreasecoroutine=StartCoroutine(DecreaseCoroutine());
-    }
     public void GenerateShade()
     {
         GameObject shade = Instantiate(MCshade, transform.position, transform.rotation);
         shade.transform.localScale = transform.localScale / ScaleRate;
         shade.GetComponent<MCShade>().Shadef(spriteRenderer.sprite);
-    }
-    IEnumerator DecreaseCoroutine(){
-        IsDecreasing=false;
-        yield return new WaitForSeconds(2.5f);
-        IsDecreasing=true;
     }
     public void TakeDamage(float damage)
     {

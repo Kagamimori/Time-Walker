@@ -18,7 +18,7 @@ public class PlayerManager : MonoBehaviour
         }
         set
         {
-            _playerHP = value;
+            _playerHP = Mathf.Clamp(value,0,PlayerMaxHP);
             newHeartHP.SetValue(value/PlayerMaxHP);
         }
     }
@@ -34,7 +34,7 @@ public class PlayerManager : MonoBehaviour
         }
         set
         {
-            _playerMP = value;
+            _playerMP = Mathf.Clamp(value, 0, PlayerMaxMP);
             newHeartMP.SetValue(value/PlayerMaxMP);
         }
     }

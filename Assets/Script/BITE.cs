@@ -34,31 +34,28 @@ public class BITE : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        anim=GetComponent<Animator>();
-        PC2D=GetComponent<PolygonCollider2D>();
-        SR=GetComponent<SpriteRenderer>();
+        anim = GetComponent<Animator>();
+        PC2D = GetComponent<PolygonCollider2D>();
+        SR = GetComponent<SpriteRenderer>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        transform.position=new Vector2(MC.transform.position.x,MC.transform.position.y+2f);
+        transform.position = new Vector2(MC.transform.position.x, MC.transform.position.y + 2f);
 
-        MC.Closemouth=false;
+        MC.Closemouth = false;
     }
-    public void Bite(float BiteDirecion){
+    public void Bite(float BiteDirecion) {
         SR.enabled = true;
         Invoke("SRDisappear", 0.5f);
-        if(MC.eatthing!=0){
-            return;
-        }
         switch (BiteDirecion)
         {
             case 1:
-                transform.localRotation=Quaternion.Euler(0,0,0);
+                transform.localRotation = Quaternion.Euler(0, 0, 0);
                 break;
             case 2:
-                transform.localRotation=Quaternion.Euler(0,0,270);
+                transform.localRotation = Quaternion.Euler(0, 0, 270);
                 break;
             case 3:
                 transform.localRotation = Quaternion.Euler(0, 0, 180);
@@ -67,114 +64,31 @@ public class BITE : MonoBehaviour
                 transform.localRotation = Quaternion.Euler(0, 0, 90);
                 break;
         }
-            bool biteGround =false;
-        float rate=1;
         List<Collider> results = new List<Collider>();
-        Collider2D[] colliders = Physics2D.OverlapAreaAll(PC2D.bounds.min,PC2D.bounds.max);
+        Collider2D[] colliders = Physics2D.OverlapAreaAll(PC2D.bounds.min, PC2D.bounds.max);
         List<GameObject> result = new List<GameObject>();
-        foreach(Collider2D col in colliders){
-            if(result.Contains(col.gameObject)){
+        foreach (Collider2D col in colliders) {
+            if (result.Contains(col.gameObject)) {
                 return;
             }
             result.Add(col.gameObject);
-            if (col!=PC2D){
-                GameObject obj=col.gameObject;
-                if(obj.tag=="DemonBroad"){
-                    biteGround=true;
-                    rate=1.5f;
-                }
-                IDamagableE iDamagableE=obj.GetComponent<IDamagableE>();
-                if(iDamagableE!=null){
+            if (col != PC2D) {
+                GameObject obj = col.gameObject;
+                IDamagableE iDamagableE = obj.GetComponent<IDamagableE>();
+                if (iDamagableE != null) {
                     iDamagableE.DieOut();
                 }
-                Enemy enemy=obj.GetComponent<Enemy>();
+                Enemy enemy = obj.GetComponent<Enemy>();
                 if (enemy != null)
                 {
                     enemy.TakeDamage(1, MC.transform);
                 }
-                //if(obj.tag=="Apple"){
-                //    Assigneatthing(1);
-                //}
-                //if(obj.tag=="Banana"){
-                //    Assigneatthing(2);
-                //    transform.localScale=new Vector2(8,8);
-                //}                                                                               //咬合
-                //if(obj.tag=="WaterMelon"){
-                //    Assigneatthing(3);
-                //}
-                //if(obj.tag=="Orange"){
-                //    Assigneatthing(4);
-                //}
-                //if(obj.tag=="Key"){
-                //    MC.HaveKey=true;
-                //}
-                if(obj.tag=="Terrin"&&!biteGround){
-                    biteGround=true;
-                    rate=1;
-                }
             }
         }
-        if(biteGround&&MC.eatthing==0&&!MC.HaveKey){
-            //MC.BiteGround(rate);
-        }
-        // var objProcess=new Dictionary<GameObject,int>(collidedObjects);
-        // bool biteGround=false;
-        // float rate=1;
-        // foreach(var obj in objProcess.Keys){
-        //     if(obj!=null){
-        //         if(obj.tag=="Bubble"&&obj.GetComponent<Bubble>().CanBite){
-        //             biteGround=true;
-        //             rate=2;
-        //         }
-        //         if(obj.tag=="DemonBroad"){
-        //             biteGround=true;
-        //             rate=1.5f;
-        //         }
-        //         IDamagableE iDamagableE=obj.GetComponent<IDamagableE>();
-        //         if(iDamagableE!=null){
-        //             iDamagableE.DieOut();
-        //         }
-        //         if(obj.tag=="Apple"){
-        //             Assigneatthing(1);
-        //         }
-        //         if(obj.tag=="Banana"){
-        //             Assigneatthing(2);
-        //             transform.localScale=new Vector2(8,8);
-        //         }                                                                               //咬合
-        //         if(obj.tag=="WaterMelon"){
-        //             Assigneatthing(3);
-        //         }
-        //         if(obj.tag=="Orange"){
-        //             Assigneatthing(4);
-        //         }
-        //         if(obj.tag=="Key"){
-        //             MC.HaveKey=true;
-        //         }
-        //         if(obj.tag=="Terrin"&&!biteGround){
-        //             biteGround=true;
-        //             rate=1;
-        //         }
-        //     }
-        // }
-        // if(biteGround&&MC.eatthing==0){
-        //     MC.BiteGround(rate);
-        // }
     }
     public void SRDisappear()
     {
         SR.enabled = false;
-    }
-    public void MCDeath(){
-        transform.localScale=Vector3.zero;
-    }
-    public void MCRebirth(){
-        transform.localScale=new Vector2(10,10);
-    }
-    void Assigneatthing(int n){
-        if(MC.eatthing!=0){
-            return;
-        }
-        MC.eatthing=n;
     }
 }
 
