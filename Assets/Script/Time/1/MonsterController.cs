@@ -1,344 +1,475 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-//状态机
 public enum EnemyState
 {
     Patrol,
-    Chase,  
-    Attack 
+    Charge,
+    Stun
 }
 
 public class MonsterController : MonoBehaviour
 {
+    [Header("状态")]
     public EnemyState currentState = EnemyState.Patrol;
-    public float detectionRange = 13f;   // 检测玩家的范围
-    public float attackRange = 5f;     // 攻击玩家的范围
-    public float detectionBuffer = 0.6f;  // 退出检测范围需要多走0.3f
-    public float attackBuffer = 0.5f;     // 退出攻击范围需要多走0.2f
 
-    // 实际生效的范围（动态计算）
+    [Header("检测范围")]
+    public float detectionRange = 13f;
+    public float detectionBuffer = 0.2f;  // 超了一点再离开
     private float effectiveDetectionRange;
-    private float effectiveAttackRange;
 
-    public float moveSpeed = 3f;
+    [Header("移动速度")]
+    public float patrolSpeed = 3f;          // 巡逻速度
+    public float chargeMaxSpeed = 4f;      // 冲锋最大速度
+    public float accelerationTime = 0.5f;  // 加速到最大速度的时间（用了时间而非加速度）
+    public float decelerationTime = 0.5f;  // 自主减速的时间（追击状态）
 
-    private EnemyState pendingState;           // 等待切换的状态
-    private bool isStateLocked = false;        // 状态锁
-    private bool hasPendingTransition = false; // 是否有等待中的切换
-    public bool canMove = true;
-    private bool isChaseWaiting = false;
+    [Header("僵直")]
+    public float stunDeceleration = 8f;    // 僵直滑行的减速度（与自主减速数值相等，但变量独立）
+    public float minKnockbackForce = 5f;   // 对玩家的最小击退力
+    public float maxKnockbackForce = 12f;  // 对玩家的最大击退力
 
+    [Header("巡逻边界")]
+    public Transform patrolPointA;
+    public Transform patrolPointB;
+    public float boundaryWaitTime = 0.2f;   // 到达边界后的停留时间（根据动画而定）
 
-    public Transform groundCheckPoint; // 加个子类gameobject地面检测点（在脚底位置）
+    [Header("地面检测")]
+    public Transform groundCheckPoint;
     public LayerMask groundLayer;
-    public LayerMask enemyLayer;
-    private bool isFacingRight = true;
-   
-    private Transform player;
-    public Transform patrolPointA; // 左边界点
-    public Transform patrolPointB; // 右边界点
+    public float groundCheckDistance = 1.5f;
 
-    public Transform AttackPoint;
+    [Header("墙壁检测")]
+    public LayerMask wallLayer;
+    public float wallCheckDistance = 0.5f;
+
+    [Header("攻击")]
+    public int attackDamage = 10;
     public LayerMask playerLayer;
-    public float attackDamage = 10f;
 
+    // 内部变量
     private Rigidbody2D rb;
     private Animator anim;
+    private Transform player;
+    private bool isFacingRight = true;
+    private float currentSpeed = 0f;           // 当前实际速度（绝对值）
+    private bool isStateLocked = false;        // 状态锁（仅Stun时使用）
+    private EnemyState pendingState;
+    private bool hasPendingTransition;
+
+    // 巡逻边界等待
+    private bool isBoundaryWaiting = false;
+    private float boundaryWaitTimer = 0f;
+    private bool shouldFlipAfterWait = false;
+
+    // 加速度控制
+    private float accelerationPerSecond;
+    private float decelerationPerSecond;
+    private bool isAccelerating = false;
+    private bool isDecelerating = false;
+    private float targetSpeed;                 // 加速的目标速度（4）
+    private float accelerationTimer;
+
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;//你自己给一下Player tag（我看你工程好像没搞）
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
 
-        effectiveDetectionRange = detectionRange;//动态变化的攻击范围，这里先初始化
-        effectiveAttackRange = attackRange;
+        effectiveDetectionRange = detectionRange;
+        accelerationPerSecond = (chargeMaxSpeed - patrolSpeed) / accelerationTime;
+        decelerationPerSecond = chargeMaxSpeed / decelerationTime; // 从4到0的减速度
+        stunDeceleration = decelerationPerSecond; // 使两者数值相等，但保留独立变量方便日后调整
     }
 
-    
     void Update()
     {
-        float distToPlayer = Vector2.Distance(transform.position, player.position);
+        if (!canMove) return;
 
-        EnemyState targetState = EvaluateState(distToPlayer);//目标，但不马上切换
+        float distToPlayer = player ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
+        EnemyState targetState = EvaluateState(distToPlayer);
 
-        // 如果状态没被锁，直接切换
+        // 状态切换（受锁控制）
         if (!isStateLocked)
         {
             if (targetState != currentState)
-            {
                 TransitionToState(targetState);
-            }
         }
         else
         {
-            // 状态被锁时，只记录期望状态，不立即切换
             if (targetState != currentState)
             {
                 pendingState = targetState;
                 hasPendingTransition = true;
             }
         }
-        ExecuteCurrentState();//实际的状态执行
+        
+            transform.localScale = new Vector3(isFacingRight ? 1 : -1, 1, 1);
+        
+
+        ExecuteCurrentState();
+        UpdateAnimatorSpeed();
     }
-    //判断，切换，执行分离的状态机
-    #region 状态判断
-    private EnemyState EvaluateState(float distToPlayer)//不同状态下去到另一个状态判断不同（主要是在距离的变化）
+
+    #region 状态评估
+    private EnemyState EvaluateState(float distToPlayer)
     {
+        // 如果在僵直中，任何评估都不改变状态（由锁保证）
+        switch (currentState)
         {
-            switch (currentState)
-            {
-                case EnemyState.Patrol:
-                    // 巡逻状态：用标准范围判断进入追逐
-                    if (distToPlayer <= detectionRange)
-                    {
+            case EnemyState.Patrol:
+                if (distToPlayer <= detectionRange)
+                    return EnemyState.Charge;
+                return EnemyState.Patrol;
 
-                        return EnemyState.Chase;
-                    }
+            case EnemyState.Charge:
+                // 冲锋中：如果玩家离开扩展范围或到达边界，转为巡逻
+                if (distToPlayer > effectiveDetectionRange || HasReachedBoundary())
                     return EnemyState.Patrol;
+                return EnemyState.Charge;
 
-                case EnemyState.Chase:
-                    // 追逐状态：优先判断攻击，然后用缓冲范围判断退出
-                    if (distToPlayer <= attackRange)
-                    {
-                        return EnemyState.Attack;
-                    }
-                    else if (distToPlayer > effectiveDetectionRange)//要更远的距离跑出来
-                    {
+            case EnemyState.Stun:
+                // 僵直由自身解除，外部不能切换
+                return EnemyState.Stun;
 
-                        return EnemyState.Patrol;
-                    }
-                    return EnemyState.Chase;
-
-                case EnemyState.Attack:
-                    // 攻击状态：用缓冲范围判断退出
-                    if (distToPlayer > effectiveAttackRange)
-                    {
-                        return EnemyState.Chase;
-                    }
-                    return EnemyState.Attack;
-
-                default:
-                    return EnemyState.Patrol;
-            }
+            default:
+                return EnemyState.Patrol;
         }
     }
     #endregion
-    
-    #region 切换状态
-    void TransitionToState(EnemyState newState)
+
+    #region 状态切换
+    private void TransitionToState(EnemyState newState) // 切换，进入，离开分开写
     {
-        // 退出当前状态
         OnExitState(currentState);
-
         currentState = newState;
-
-        // 进入新状态
         OnEnterState(currentState);
     }
 
-    void OnEnterState(EnemyState state)
+    private void OnEnterState(EnemyState state)
     {
         switch (state)
         {
-            case EnemyState.Chase:
-                // 从巡逻进入追逐时，扩大退出范围
-                effectiveDetectionRange = detectionRange + detectionBuffer;
-                break;
-
-            case EnemyState.Attack:
-                // 从追逐进入攻击时，扩大退出范围
-                effectiveAttackRange = attackRange + attackBuffer;
-                // 锁定状态机
-                LockState(true);
-                anim.SetTrigger("Attack");
-                //动画命中帧，结束帧这些还没写
-                //anim.SetBool("IsAttacking", true);  // 用 Bool 参数循环攻击动画
-                //如果需要怪物一直攻击，直到玩家离开就不要在动画结束帧时重新评估状态的方法
-                //
-                break;
-        }
-    }
-
-    void OnExitState(EnemyState state)
-    {
-        switch (state)
-        {
-            case EnemyState.Attack:
-                effectiveAttackRange = attackRange;
-                if (isStateLocked)
-                    LockState(false);//保证一下解锁
-                // 攻击状态退出时什么都不做，锁由动画事件解除（先执行动画，再切换锁，防止攻击动画放一半锁就改了）
-                break;
             case EnemyState.Patrol:
-                // 退出巡逻，可能需要停止巡逻动画
-                break;
-
-            case EnemyState.Chase:
                 effectiveDetectionRange = detectionRange;
-                // 退出追逐，可能需要停止追逐音效
+                // 如果是从其他状态回来，立即恢复巡逻速度并重置加速度标志
+                currentSpeed = patrolSpeed;
+                isAccelerating = false;
+                isDecelerating = false;
+                isBoundaryWaiting = false;
                 break;
 
-            
+            case EnemyState.Charge:
+                effectiveDetectionRange = detectionRange + detectionBuffer;
+                // 如果速度小于3，瞬间提升到3再开始加速
+                if (currentSpeed < patrolSpeed)
+                    currentSpeed = patrolSpeed;
+                // 启动加速：从当前速度到4
+                StartAccelerating();
+                break;
+
+            case EnemyState.Stun:
+                LockState(true);
+                isAccelerating = false;
+                isDecelerating = false; // 使用专用的减速度
+                break;
         }
     }
-    // 供外部调用的锁控制
+
+    private void OnExitState(EnemyState state)
+    {
+        switch (state)
+        {
+            case EnemyState.Charge:
+                effectiveDetectionRange = detectionRange;
+                StopAccelerating();
+                StopDecelerating();
+                break;
+
+            case EnemyState.Stun:
+                LockState(false);
+                break;
+
+            case EnemyState.Patrol:
+                
+                break;
+        }
+    }
+    #endregion
+
+    #region 行为执行
+    private void ExecuteCurrentState()
+    {
+        switch (currentState)
+        {
+            case EnemyState.Patrol:
+                Patrol();
+                break;
+            case EnemyState.Charge:
+                Charge();
+                break;
+            case EnemyState.Stun:
+                StunSlide();
+                break;
+        }
+    }
+
+    // ---------- 巡逻 ----------
+    private void Patrol()
+    {
+        // 边界等待逻辑
+        if (isBoundaryWaiting)
+        {
+            rb.velocity = Vector2.zero;
+            currentSpeed = 0f;
+            boundaryWaitTimer -= Time.deltaTime;
+            if (boundaryWaitTimer <= 0f)
+            {
+                isBoundaryWaiting = false;
+                if (shouldFlipAfterWait)
+                    Flip();
+                currentSpeed = patrolSpeed; // 恢复移动速度
+            }
+            return;
+        }
+
+        // 墙壁/悬崖检测掉头
+        if (IsHittingWall() || !IsGroundAhead())
+        {
+            Flip();
+        }
+
+        // 边界点检测（到达时开始等待）
+        if (patrolPointA && patrolPointB)
+        {
+            if (isFacingRight && transform.position.x >= patrolPointB.position.x)
+            {
+                StartBoundaryWait(true);
+            }
+            else if (!isFacingRight && transform.position.x <= patrolPointA.position.x)
+            {
+                StartBoundaryWait(true);
+            }
+        }
+
+        if (!isBoundaryWaiting)
+        {
+            rb.velocity = new Vector2((isFacingRight ? 1 : -1) * patrolSpeed, rb.velocity.y);
+            currentSpeed = patrolSpeed;
+        }
+    }
+
+    private void StartBoundaryWait(bool flipAfter)
+    {
+        isBoundaryWaiting = true;
+        boundaryWaitTimer = boundaryWaitTime;
+        shouldFlipAfterWait = flipAfter;
+        rb.velocity = Vector2.zero;
+        currentSpeed = 0f;
+    }
+
+    // ---------- 冲锋 ----------
+    private void Charge()
+    {
+        // 如果加速中
+        if (isAccelerating)
+        {
+            accelerationTimer += Time.deltaTime;
+            currentSpeed = Mathf.MoveTowards(currentSpeed, chargeMaxSpeed, accelerationPerSecond * Time.deltaTime);
+            if (currentSpeed >= chargeMaxSpeed)
+            {
+                currentSpeed = chargeMaxSpeed;
+                isAccelerating = false;
+            }
+        }
+        // 如果减速中
+        else if (isDecelerating)
+        {
+            currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, decelerationPerSecond * Time.deltaTime);
+            if (currentSpeed <= 0f)
+            {
+                currentSpeed = 0f;
+                isDecelerating = false;
+                // 减速到0，转为巡逻
+                TransitionToState(EnemyState.Patrol);
+                return;
+            }
+        }
+
+        // 面向玩家
+        FacePlayer();
+
+        rb.velocity = new Vector2((isFacingRight ? 1 : -1) * currentSpeed, rb.velocity.y);
+
+        // 检查退出条件（仅在非减速时检查，减速中已决定退出，避免重复）
+        if (!isDecelerating)
+        {
+            float distToPlayer = Vector2.Distance(transform.position, player.position);
+            if (distToPlayer > effectiveDetectionRange || HasReachedBoundary())
+            {
+                // 开始减速
+                StartDecelerating();
+            }
+        }
+    }
+
+    private void StartAccelerating()
+    {
+        isAccelerating = true;
+        isDecelerating = false;
+        accelerationTimer = 0f;
+        // 加速度恒定，从当前速度到4
+    }
+
+    private void StopAccelerating()
+    {
+        isAccelerating = false;
+    }
+
+    private void StartDecelerating()
+    {
+        isDecelerating = true;
+        isAccelerating = false;
+    }
+
+    private void StopDecelerating()
+    {
+        isDecelerating = false;
+    }
+
+    // ---------- 僵直滑行 ----------
+    private void StunSlide()
+    {
+        // 用恒定减速度降低速度
+        currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, stunDeceleration * Time.deltaTime);
+        rb.velocity = new Vector2((isFacingRight ? 1 : -1) * currentSpeed, rb.velocity.y);
+
+        if (currentSpeed <= 0f)
+        {
+            currentSpeed = 0f;
+            rb.velocity = Vector2.zero;
+            // 僵直结束
+            LockState(false);
+            // 立即评估下一步状态
+            float dist = player ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
+            EnemyState next = EvaluateState(dist);
+            TransitionToState(next);
+        }
+    }
+    #endregion
+
+    #region 碰撞处理
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 仅当处于Charge状态且碰到玩家时触发
+        if (currentState != EnemyState.Charge)
+            return;
+
+        if (((1 << collision.gameObject.layer) & playerLayer) != 0)
+        {
+            // 伤害玩家（假设了多个）
+            var playerHealth = collision.gameObject.GetComponent<MCscript>();
+            if (playerHealth != null)
+                playerHealth.TakeDamage(attackDamage);
+
+            // 暂时假设主角takedamage击退没写
+
+            // 击退玩家（力度与当前速度相关）
+            float speedRatio = Mathf.InverseLerp(patrolSpeed, chargeMaxSpeed, currentSpeed); // 用了比例而非数字
+            float knockbackForce = Mathf.Lerp(minKnockbackForce, maxKnockbackForce, speedRatio);
+            Vector2 knockbackDir = (collision.transform.position - transform.position).normalized;
+            Rigidbody2D playerRb = collision.rigidbody;
+            if (playerRb != null)
+                playerRb.AddForce(knockbackDir * knockbackForce, ForceMode2D.Impulse);
+
+            // 自身进入僵直（Stun）
+            TransitionToState(EnemyState.Stun);
+        }
+    }
+    #endregion
+
+    #region 辅助方法
+    private bool HasReachedBoundary()
+    {
+        if (patrolPointA == null || patrolPointB == null)
+            return false;
+        if (isFacingRight && transform.position.x >= patrolPointB.position.x)
+            return true;
+        if (!isFacingRight && transform.position.x <= patrolPointA.position.x)
+            return true;
+        return false;
+    }
+
+    private void FacePlayer()
+    {
+        if (player == null) return;
+        if (player.position.x > transform.position.x && !isFacingRight)
+            Flip();
+        else if (player.position.x < transform.position.x && isFacingRight)
+            Flip();
+    }
+
+    private void Flip()
+    {
+        isFacingRight = !isFacingRight;
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    private void UpdateAnimatorSpeed()
+    {
+        if (anim)
+            anim.SetFloat("Speed", Mathf.Abs(currentSpeed));
+            anim.SetFloat("WalkSpeedMultiplier", Mathf.Abs(currentSpeed) / patrolSpeed);// 用浮点数关联动画
+    }
+
+    // 地面检测（前方是否有地面）
+    private bool IsGroundAhead()
+    {
+        Vector2 origin = groundCheckPoint.position;
+        Vector2 direction = (isFacingRight ? Vector2.right : Vector2.left) + Vector2.down;
+        direction.Normalize();
+        RaycastHit2D hit = Physics2D.Raycast(origin, direction, groundCheckDistance, groundLayer);
+        return hit.collider != null;
+    }
+
+    // 墙壁检测
+    private bool IsHittingWall()
+    {
+        Vector2 origin = transform.position;
+        Vector2 direction = isFacingRight ? Vector2.right : Vector2.left;
+        RaycastHit2D hit = Physics2D.Raycast(origin, direction, wallCheckDistance, wallLayer);
+        return hit.collider != null;
+    }
+
+    // 状态锁控制（供内部及外部查询）
     public void LockState(bool locked)
     {
         isStateLocked = locked;
-
-        // 解锁时，如果有待处理的切换，立即执行
         if (!locked && hasPendingTransition)
         {
             hasPendingTransition = false;
             TransitionToState(pendingState);
         }
     }
+
+    // 一点补充
+    public bool IsStateLocked => isStateLocked; // 只读访问锁定状态，主要可能用于takedamage作条件数据
+    // 是否可移动（外部控制）
+    [HideInInspector] public bool canMove = true;
     #endregion
 
-    #region 实际动作执行和行为相关判断
-    void ExecuteCurrentState()
+    private void OnDrawGizmosSelected() // scene窗口AB点绘制辅助
     {
-        if (!canMove) return;
-        //纯粹执行行为，不需要判断任何条件
-        switch (currentState)
+        if (patrolPointA && patrolPointB)
         {
-            case EnemyState.Patrol:
-                //Debug.Log("Patrol");
-                Patrol();   // 直接执行，因为既然在这个状态，就应该巡逻
-                break;
-
-            case EnemyState.Chase:
-                //Debug.Log("Chase");
-                Chase();
-                break;
-
-            case EnemyState.Attack:
-                //Debug.Log("Attack");
-                FacePlayer();
-                
-                break;
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(patrolPointA.position, patrolPointB.position);
+            Gizmos.DrawWireSphere(patrolPointA.position, 0.3f);
+            Gizmos.DrawWireSphere(patrolPointB.position, 0.3f);
         }
-    }
-    void Patrol()
-    {
-        // 注释原来的掉头方式，改为完全靠两点判定
-        //// 前方是墙壁或悬崖时，立即掉头
-        //if (IsHittingWall() || !IsGroundAhead())
-        //    Flip();
-
-        if (patrolPointA != null && patrolPointB != null)
-        {
-            if (isFacingRight && transform.position.x >= patrolPointB.position.x)
-            {
-                Flip();
-            }
-            else if (!isFacingRight && transform.position.x <= patrolPointA.position.x)
-            {
-                Flip();
-            }
-        }
-
-        rb.velocity = new Vector2((isFacingRight ? 1 : -1) * moveSpeed, rb.velocity.y);
-    }
-
-    void Chase()
-    {
-        if (isChaseWaiting) return;
-        // 判断玩家在左还是在右，并调整朝向
-        if (player.position.x > transform.position.x && !isFacingRight)
-            Flip();
-        else if (player.position.x < transform.position.x && isFacingRight)
-            Flip();
-
-        if (isFacingRight && transform.position.x >= patrolPointB.position.x || !isFacingRight && transform.position.x <= patrolPointA.position.x) // 追的时候追到领地边界了
-        {
-            StartCoroutine(ChaseBoundaryWait());
-            return;
-        }
-
-        // 向玩家移动
-        Vector2 targetVelocity = new Vector2((isFacingRight ? 1 : -1) * moveSpeed, rb.velocity.y);
-        rb.velocity = targetVelocity;
-
-    }
-    
-    //bool IsGroundAhead()
-    //{
-    //    Vector2 direction = (isFacingRight ? Vector2.right : Vector2.left) + Vector2.down;
-    //    direction.Normalize();  // 变成斜向下 45°
-        
-    //    RaycastHit2D hit = Physics2D.Raycast(groundCheckPoint.position, direction, 1.5f, groundLayer);
-    //    return hit.collider != null;
-    //}
-
-    //bool IsHittingWall() { /* 类似的射线检测逻辑 */ return false; }//防止怪物穿墙
-    //bool IsOtherEnemyAhead() 
-    //{
-    //    Vector2 direction = (isFacingRight ? Vector2.right : Vector2.left);
-    //    direction.Normalize();  // 变成斜向下 45°
-
-    //    RaycastHit2D hit = Physics2D.Raycast(groundCheckPoint.position, direction, 1.5f, enemyLayer);
-    //    return hit.collider != null;
-    //}//防止怪物撞怪物
-    void Flip()
-    {
-        isFacingRight = !isFacingRight;
-        transform.localScale = new Vector3(isFacingRight ? 1 : -1, 1, 1);//给你调了比例
-    }
-    void FacePlayer()
-    {
-        if (player.position.x > transform.position.x && !isFacingRight)
-            Flip();
-        else if (player.position.x < transform.position.x && isFacingRight)
-            Flip();
-    }
-    IEnumerator ChaseBoundaryWait()
-    {
-        isChaseWaiting = true;
-        canMove = false;
-        rb.velocity = Vector2.zero;
-
-        yield return new WaitForSeconds(1.5f);
-
-        isChaseWaiting = false;
-        canMove = true;
-
-        // 强制切换回巡逻
-        TransitionToState(EnemyState.Patrol);
-    }
-    #endregion
-
-    //现在进入atteck会锁住，得加了动画才能开锁
-
-
-    // 由攻击动画的最后一帧调用
-    public void OnAttackAnimationEnd()
-    {
-        LockState(false); // 解锁状态机
-
-        float dist = Vector2.Distance(transform.position, player.position);
-        EnemyState nextState = EvaluateState(dist);//主动进行状态评估，如果还是在范围内，可以继续保持攻击状态
-        TransitionToState(nextState);
-    }
-    // 这个方法由攻击动画的命中帧调用
-    public void PerformAttackHit()
-    {
-        // 伤害判定逻辑
-        Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(AttackPoint.position, attackRange, playerLayer);
-        foreach (var player in hitPlayers)
-        {
-            player.GetComponent<MCscript>()?.TakeDamage(attackDamage);
-        }
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
     }
 }
-// 我需要你修改这段代码，修改为通过设置一个animator的浮点数来控制1d混合树的动画，而不是直接用代码调用，这个敌人角色只会有两个动画，
-// 一个是行走，一个是待机，我需要敌人在达到ab两点时，变为动画机参数速度为0。另外，删除追寻状态，改为只有攻击状态，在玩家进入原本的追寻范围时，
-// 敌人会向玩家加速（修改参数为3f线性变到4f，加速用时0.5秒），如果撞到了玩家，则进入1.5秒的僵直状态，结束后如果玩家还在追寻范围内，会重新从3开始加速，
-// 如果在追寻过程中，玩家离开了追寻范围，或者追到了自己的ab领地边缘，会花0.5秒减速（如果减速过程中到达巡逻边界，则优先变为待机状态（速度为0））（减速的加速度和加速的数值上相同，调用上独立）
-
-
-
-
-// 就会用0.5秒减速，减速的加速度和加速的数值上相同，调用上独立，减速0.5秒之内，若到达了边界，则直接进入优先级更高的待机状态，没到达边界，就继续以3 的速度运动）
