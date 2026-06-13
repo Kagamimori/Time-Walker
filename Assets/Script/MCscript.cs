@@ -105,6 +105,7 @@ public class MCscript : MonoBehaviour
 
         if (IsGround == true)
         {
+            
             if (Movecontroller == 0)
             {
                 if (Math.Abs(rb.velocity.x) < 0.3f)
@@ -113,7 +114,7 @@ public class MCscript : MonoBehaviour
                 }
                 else
                 {
-                    rb.velocity -= new Vector2(2f * Accelerationspeed * Time.deltaTime * Xdirection, 0);
+                    rb.velocity -= new Vector2(2.5f * Accelerationspeed * Time.deltaTime * Xdirection, 0);
                 }
             }
             if (IsDashing)
@@ -135,6 +136,7 @@ public class MCscript : MonoBehaviour
         }
         else
         {
+         
             if (Movecontroller == 0)
             {                                                                        //移动
                 if (Math.Abs(rb.velocity.x) < 0.3f)
