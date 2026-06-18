@@ -47,6 +47,8 @@ public class MonsterController : MonoBehaviour
     public int attackDamage = 10;
     public LayerMask playerLayer;
 
+  
+
     // 内部变量
     private Rigidbody2D rb;
     private Animator anim;
@@ -69,6 +71,9 @@ public class MonsterController : MonoBehaviour
     private bool isDecelerating = false;
     private float targetSpeed;                 // 加速的目标速度（4）
     private float accelerationTimer;
+
+    private bool isStunWaiting = false;   // 是否处于速度归零后的等待阶段
+    private float stunWaitTimer = 0f;     // 等待计时器
 
     void Start()
     {
@@ -160,6 +165,7 @@ public class MonsterController : MonoBehaviour
                 break;
 
             case EnemyState.Charge:
+                if (anim != null) anim.SetBool("isWaiting", false); // 结束 Idle，恢复 Walk
                 effectiveDetectionRange = detectionRange + detectionBuffer;
                 // 如果速度小于3，瞬间提升到3再开始加速
                 if (currentSpeed < patrolSpeed)
@@ -172,6 +178,10 @@ public class MonsterController : MonoBehaviour
                 LockState(true);
                 isAccelerating = false;
                 isDecelerating = false; // 使用专用的减速度
+                if (anim != null) anim.speed = 0f;   // 冻结动画
+                isStunWaiting = false;    // 重置
+                stunWaitTimer = 0f;
+                if (anim != null) anim.SetBool("isWaiting", false);   
                 break;
         }
     }
@@ -188,10 +198,15 @@ public class MonsterController : MonoBehaviour
 
             case EnemyState.Stun:
                 LockState(false);
+                if (anim != null)
+                {
+                    anim.speed = 1f;   // 恢复动画
+                    anim.SetBool("isWaiting", false); // 确保僵直恢复后不会卡在 Idle
+                }
                 break;
 
             case EnemyState.Patrol:
-                
+                if (anim != null) anim.SetBool("isWaiting", false); 
                 break;
         }
     }
@@ -228,7 +243,8 @@ public class MonsterController : MonoBehaviour
                 isBoundaryWaiting = false;
                 if (shouldFlipAfterWait)
                     Flip();
-                currentSpeed = patrolSpeed; // 恢复移动速度
+                currentSpeed = patrolSpeed;
+                if (anim != null) anim.SetBool("isWaiting", false); // 结束 Idle，恢复 Walk
             }
             return;
         }
@@ -266,8 +282,8 @@ public class MonsterController : MonoBehaviour
         shouldFlipAfterWait = flipAfter;
         rb.velocity = Vector2.zero;
         currentSpeed = 0f;
+        if (anim != null) anim.SetBool("isWaiting", true);   // 播放 Idle
     }
-
     // ---------- 冲锋 ----------
     private void Charge()
     {
@@ -300,6 +316,18 @@ public class MonsterController : MonoBehaviour
         FacePlayer();
 
         rb.velocity = new Vector2((isFacingRight ? 1 : -1) * currentSpeed, rb.velocity.y);
+
+        if (patrolPointA && patrolPointB)
+        {
+            if (isFacingRight && transform.position.x >= patrolPointB.position.x)
+            {
+                StartBoundaryWait(true);
+            }
+            else if (!isFacingRight && transform.position.x <= patrolPointA.position.x)
+            {
+                StartBoundaryWait(true);
+            }
+        }
 
         // 检查退出条件（仅在非减速时检查，减速中已决定退出，避免重复）
         if (!isDecelerating)
@@ -340,20 +368,37 @@ public class MonsterController : MonoBehaviour
     // ---------- 僵直滑行 ----------
     private void StunSlide()
     {
-        // 用恒定减速度降低速度
-        currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, stunDeceleration * Time.deltaTime);
-        rb.velocity = new Vector2((isFacingRight ? 1 : -1) * currentSpeed, rb.velocity.y);
-
-        if (currentSpeed <= 0f)
+        if (!isStunWaiting)
         {
-            currentSpeed = 0f;
-            rb.velocity = Vector2.zero;
-            // 僵直结束
-            LockState(false);
-            // 立即评估下一步状态
-            float dist = player ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
-            EnemyState next = EvaluateState(dist);
-            TransitionToState(next);
+            // 减速阶段：速度向0靠近
+            float a = currentSpeed / 2;
+            currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, stunDeceleration * Time.deltaTime);
+            rb.velocity = new Vector2((isFacingRight ? 1 : -1) * currentSpeed, rb.velocity.y);
+
+            // 速度归零 → 进入等待阶段
+            if (currentSpeed <= 0f)
+            {
+                currentSpeed = 0f;
+                rb.velocity = Vector2.zero;
+                isStunWaiting = true;
+                stunWaitTimer = 1f + a;   // 等待时间和碰撞之前速度有关
+            }
+        }
+        else
+        {
+            // 等待阶段：只倒计时，不移动，动画保持冻结
+            stunWaitTimer -= Time.deltaTime;
+            if (stunWaitTimer <= 0f)
+            {
+                
+                // 等待结束，退出僵直
+                LockState(false);
+                float dist = player ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
+                EnemyState next = (dist <= detectionRange) ? EnemyState.Charge : EnemyState.Patrol;
+                // 预先设置速度，避免经过 0 触发 Idle 动画
+                currentSpeed = patrolSpeed;   // 巡逻或冲锋的起始速度都是 patrolSpeed
+                TransitionToState(next);
+            }
         }
     }
     #endregion
@@ -462,14 +507,46 @@ public class MonsterController : MonoBehaviour
 
     private void OnDrawGizmosSelected() // scene窗口AB点绘制辅助
     {
-        if (patrolPointA && patrolPointB)
+        // 1. 绘制两个巡逻边界点之间的连线及标记
+        if (patrolPointA != null && patrolPointB != null)
         {
-            Gizmos.color = Color.cyan;
+            // 绘制白色连线
+            Gizmos.color = Color.white;
             Gizmos.DrawLine(patrolPointA.position, patrolPointB.position);
+
+            // 绘制点球体（左点用蓝色，右点用黄色）
+            Gizmos.color = Color.blue;
             Gizmos.DrawWireSphere(patrolPointA.position, 0.3f);
+            Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(patrolPointB.position, 0.3f);
+
+            // 可选：用半透明立方体显示整个巡逻区间（仅在 X 轴）
+            Vector3 center = (patrolPointA.position + patrolPointB.position) / 2f;
+            Vector3 size = new Vector3(
+                Mathf.Abs(patrolPointB.position.x - patrolPointA.position.x),
+                0.5f,
+                0.5f
+            );
+            Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
+            Gizmos.DrawCube(center, size);
         }
+
+        // 2. 绘制怪物自身的检测范围（红色线框）
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+
+
+        // 4. 绘制地面检测点（绿色射线和终点标记）
+        if (groundCheckPoint != null)
+        {
+            Vector2 dir = (isFacingRight ? Vector2.right : Vector2.left) + Vector2.down;
+            dir.Normalize();
+            Gizmos.color = Color.green;
+            Gizmos.DrawRay(groundCheckPoint.position, dir * groundCheckDistance);
+            Gizmos.DrawWireSphere(groundCheckPoint.position + (Vector3)dir * groundCheckDistance, 0.05f);
+        }
+
+
     }
 }
