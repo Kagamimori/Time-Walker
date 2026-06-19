@@ -30,11 +30,10 @@ public class Enemy : MonoBehaviour
         if (currentHealth <= 0 || isInvincible) return;
 
         currentHealth -= damage;
-        isInvincible = true;
+        //isInvincible = true;
 
         // 播放受击动画
-        anim.SetTrigger("Hurt");
-
+        //anim.SetTrigger("Hurt");
         // 击退：向攻击者的反方向弹开
         Vector2 knockbackDirection = (transform.position - attacker.position).normalized;
         rb.velocity = new Vector2(knockbackDirection.x * knockbackForce, rb.velocity.y);
