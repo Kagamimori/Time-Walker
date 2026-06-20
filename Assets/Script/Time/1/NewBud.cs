@@ -5,191 +5,122 @@ using UnityEngine;
 public class NewBud : MonoBehaviour, ITimeControlable
 {
     public bool CanReserveTime { get; set; } = true;
-    [System.Serializable]
-    public struct SporeMotionData
-    {
-        public Vector3 endPosition;      // 孢子运动的终点世界坐标
-        public AnimationCurve xCurve;    // X 轴运动曲线
-        public AnimationCurve yCurve;    // Y 轴运动曲线
-    }
-
-    [Header("开花动画")]
-    [SerializeField] private string bloomStateName = "Bloom"; // Animator 中开花动画状态名 //
-    private float bloomDuration;                               // 动画片段实际时长（动态获取）
 
     [Header("孢子配置")]
-    [SerializeField] private GameObject sporePrefab;
-    [SerializeField] private int sporeCount = 5;
-    [SerializeField] private SporeMotionData[] sporeMotions;   // 每个孢子的终点和运动曲线
+    [SerializeField] private GameObject[] sporeObjects; // 在场景中预先放置的孢子对象
 
-    [Header("变亮")]
-    [SerializeField] private AnimationCurve LightCurve;        // 亮度变化曲线
-    [SerializeField] private float LightTime;                  // 亮度过渡时间
-    [SerializeField] private float Darkrgb;                    // 暗时的 RGB 值（灰度乘法，0~1）
-    [SerializeField] private float Lightrbg;                   // 亮时的 RGB 值（灰度乘法，0~1）
-    private Coroutine LightCorotine;
-    private bool IsLighten;
+    [Header("透明度渐变")]
+    [SerializeField] private float fadeDuration = 1f;
+    [SerializeField] private AnimationCurve fadeCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
-    [Header("重置开关")]
-    [SerializeField] private bool resetOnReverseComplete = true; // 逆向归零后是否回到未激活状态并销毁孢子
-
-    public bool isActivated;
+    private bool isActivated;
     private float currentTime;
-    private int bloomStateHash;
 
-    private Animator anim;
-    private SpriteRenderer SR;
-    private List<Transform> sporeList = new List<Transform>();
+    private List<SporeInstance> sporeInstances = new List<SporeInstance>();
+
+    private class SporeInstance
+    {
+        public GameObject gameObject;
+        public SpriteRenderer renderer;
+        public Collider2D[] colliders;
+        public float currentAlpha;
+    }
 
     private void Awake()
     {
-        anim = GetComponent<Animator>();
-        SR = GetComponent<SpriteRenderer>();
-
-        anim.speed = 0f;
-
-        bloomStateHash = Animator.StringToHash(bloomStateName); // 用哈希查找那个动画的名字
+        // 初始化所有预置孢子，初始禁用
+        foreach (GameObject obj in sporeObjects)
+        {
+            if (obj == null) continue;
+            SporeInstance instance = new SporeInstance();
+            instance.gameObject = obj;
+            instance.renderer = obj.GetComponent<SpriteRenderer>();
+            instance.colliders = obj.GetComponents<Collider2D>();
+            // 初始状态：未激活（禁用GameObject）
+            obj.SetActive(false);
+            sporeInstances.Add(instance);
+        }
     }
 
-    private void Start()
-    {
-        // 设置初始暗色（灰度乘法，保留贴图本身色相）
-        SR.color = new Color(Darkrgb, Darkrgb, Darkrgb, 1);
-    }
-
-    #region 实现接口
-
+    #region 实现 ITimeControlable
     public void ChangeCurrentTime(float deltaTime)
     {
-        // 未激活时只响应正 deltaTime 以激活，负 deltaTime 忽略
-        if (!isActivated)
+        if (!isActivated && deltaTime > 0f)
         {
-            if (deltaTime > 0f)
-                Activate();
-            else
-                return;
+            Activate();
         }
+
+        if (!isActivated)
+            return;
 
         currentTime += deltaTime;
-        currentTime = Mathf.Clamp(currentTime, 0f, bloomDuration);
+        currentTime = Mathf.Clamp(currentTime, 0f, fadeDuration);
 
-        float progress = currentTime / bloomDuration; // 用百分比管理这个动画和孢子（CurrentTime / EndTime）
+        float progress = currentTime / fadeDuration;
+        float alpha = fadeCurve.Evaluate(progress);
 
-        // 根据进度更新 Animator 的归一化时间，实现正/逆向播放。
-        anim.Play(bloomStateHash, 0, progress);
-        UpdateSpores(progress);
-
-        // 逆向归零时，根据配置决定是否重置
-        if (progress <= 0f && deltaTime < 0f && resetOnReverseComplete)
+        foreach (var spore in sporeInstances)
         {
-            Deactivate();
+            SetSporeAlpha(spore, alpha);
         }
     }
 
-    // 高亮：严格使用 NewBlock 的灰度乘法方式
     public void Lighten(bool _isLighten)
     {
-        if (IsLighten == _isLighten)
-        {
-            return;
-        }
-
-        if (LightCorotine != null)
-        {
-            StopCoroutine(LightCorotine);
-        }
-        LightCorotine = StartCoroutine(Light(_isLighten));
-
-        IsLighten = _isLighten;
+        // 不需要实现
     }
-
     #endregion
 
-    #region 核心逻辑
-
-    // 激活状态，生成孢子
     private void Activate()
     {
-        Debug.Log("花苞激活，孢子数量：" + sporeCount);
+        if (isActivated) return;
         isActivated = true;
         currentTime = 0f;
 
-        // 获取 Animator 中指定状态的动画片段时长
-        anim.Play(bloomStateHash, 0, 0f);
-        AnimatorClipInfo[] clipInfo = anim.GetCurrentAnimatorClipInfo(0); // 这个数组里有动画时间信息
-        bloomDuration = (clipInfo.Length > 0) ? clipInfo[0].clip.length : 1f; // 后备值，防止没查到崩溃
-
-        // 实例化孢子
-        if (sporePrefab != null && sporeCount > 0)
+        // 激活所有孢子对象
+        foreach (var spore in sporeInstances)
         {
-            for (int i = 0; i < sporeCount; i++)
+            if (spore.gameObject != null)
             {
-                GameObject spore = Instantiate(sporePrefab, transform.position, Quaternion.identity); 
-                sporeList.Add(spore.transform);
+                spore.gameObject.SetActive(true);
+                // 初始透明且禁用碰撞体
+                SetSporeAlpha(spore, 0f);
             }
         }
     }
 
-    // 更新所有孢子的位置，完全由进度量驱动Lerp
-    private void UpdateSpores(float progress)
+    private void SetSporeAlpha(SporeInstance spore, float alpha)
     {
-        Vector3 startPos = transform.position; // 所有孢子的起点均为当前花苞位置
-
-        for (int i = 0; i < sporeList.Count; i++)
+        if (spore.renderer != null)
         {
-            // 若配置了该孢子的运动数据，则使用其终点和曲线；否则停留在起点
-            if (sporeMotions != null && i < sporeMotions.Length)
-            {
-                SporeMotionData data = sporeMotions[i];
+            Color color = spore.renderer.color;
+            color.a = alpha;
+            spore.renderer.color = color;
+        }
+        spore.currentAlpha = alpha;
 
-                // 保护：曲线为空则使用线性进度（匀速移动）
-                float xT = (data.xCurve != null) ? data.xCurve.Evaluate(progress) : progress;
-                float yT = (data.yCurve != null) ? data.yCurve.Evaluate(progress) : progress;
-
-                float x = Mathf.Lerp(startPos.x, data.endPosition.x, xT);
-                float y = Mathf.Lerp(startPos.y, data.endPosition.y, yT);
-                sporeList[i].position = new Vector3(x, y, startPos.z);
-            }
-            else
+        // 控制碰撞体：透明度>0时启用，否则禁用
+        bool enableCollider = alpha > 0.001f;
+        if (spore.colliders != null)
+        {
+            foreach (var col in spore.colliders)
             {
-                sporeList[i].position = startPos;
+                col.enabled = enableCollider;
             }
         }
+        // 注意：游戏对象始终激活（除非外部手动禁用），我们不在此控制GameObject激活状态
     }
 
-    // 重置到未激活状态：销毁所有孢子，时间归零，动画归零，关闭高亮。
-    private void Deactivate()
+    // 可选重置方法
+    public void ResetBud()
     {
+        // 重置时，将所有孢子禁用，并重置状态
+        foreach (var spore in sporeInstances)
+        {
+            if (spore.gameObject != null)
+                spore.gameObject.SetActive(false);
+        }
         isActivated = false;
         currentTime = 0f;
-
-        foreach (Transform t in sporeList)
-            Destroy(t.gameObject);
-        sporeList.Clear();
-
-        anim.Play(bloomStateHash, 0, 0f);
-        Lighten(false);
     }
-
-    #endregion
-
-    #region 高亮协程（严格使用 NewBlock 的灰度乘法方式）
-
-    IEnumerator Light(bool _isLighten)
-    {
-        float orginrbg = SR.color.r;
-        float targetrbg = _isLighten ? Lightrbg : Darkrgb;
-        float timer = 0;
-        while (timer < LightTime)
-        {
-            timer += Time.deltaTime;
-            float rbg = Mathf.Lerp(orginrbg, targetrbg, LightCurve.Evaluate(timer / LightTime));
-            SR.color = new Color(rbg, rbg, rbg, 1);
-            yield return null;
-        }
-        SR.color = new Color(targetrbg, targetrbg, targetrbg, 1);
-    }
-
-    #endregion
-
 }
