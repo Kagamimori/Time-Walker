@@ -87,8 +87,7 @@ Shader "Custom/CharacterHitShader_PixelUV"
                 {
                     color.rgb = lerp(color.rgb, _HitFlashColor.rgb, hitAmount);
                 }
-             
-    
+                // color.rgb *= IN.color.a;
                 return color;
             }
             

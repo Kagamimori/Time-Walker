@@ -471,7 +471,7 @@ public class MCscript : MonoBehaviour
 
         if (hitEffectController != null)
         {
-            hitEffectController.TriggerHitEffect();
+            hitEffectController.TriggerHitEffect(0);
         }
 
         // 受击时锁定当前朝向
@@ -483,5 +483,12 @@ public class MCscript : MonoBehaviour
         IsHitStun = false;
         LocalScaleLock = preHitFacing;
         transform.localScale = ScaleRate * new Vector2(LocalScaleLock, 1);
+    }
+
+    public void CollectGem(int value)
+    {
+        if (hitEffectController != null)
+            hitEffectController.TriggerHitEffect(1);
+
     }
 }

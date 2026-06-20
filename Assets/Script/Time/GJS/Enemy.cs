@@ -13,8 +13,10 @@ public class Enemy : MonoBehaviour
     private Rigidbody2D rb;
     private Animator anim;
     private MonsterController enemyController; //移动控制脚本
+    private HitEffectController hitEffectController;
     private bool isStunned = false;
     private bool isInvincible = false;
+
 
     private Coroutine invincibleCoroutine;
 
@@ -24,6 +26,7 @@ public class Enemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         enemyController = GetComponent<MonsterController>();
+        hitEffectController = GetComponent<HitEffectController>();   // 获取特效组件
     }
     public void TakeDamage(int damage, Transform attacker)//受击
     {
@@ -31,6 +34,9 @@ public class Enemy : MonoBehaviour
 
         currentHealth -= damage;
         //isInvincible = true;
+
+        if (hitEffectController != null)
+            hitEffectController.TriggerHitEffect();
 
         // 播放受击动画
         //anim.SetTrigger("Hurt");
@@ -81,7 +87,11 @@ public class Enemy : MonoBehaviour
         // 延迟销毁（等死亡动画播完）
         Destroy(gameObject, 1f);
     }
-
+    public void TriggerHitEffect()
+    {
+        if (hitEffectController != null)
+            hitEffectController.TriggerHitEffect();
+    }
     void Update()
     {
         
