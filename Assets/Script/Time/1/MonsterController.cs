@@ -17,6 +17,7 @@ public class MonsterController : MonoBehaviour
     public float detectionRange = 13f;
     public float detectionBuffer = 0.2f;  // 超了一点再离开
     private float effectiveDetectionRange;
+    public float detectionBia = 0.8f;
 
     [Header("移动速度")]
     public float patrolSpeed = 3f;          // 巡逻速度
@@ -58,6 +59,8 @@ public class MonsterController : MonoBehaviour
     private bool isStateLocked = false;        // 状态锁（仅Stun时使用）
     private EnemyState pendingState;
     private bool hasPendingTransition;
+    private Vector3 detectionOrigin;
+    private float distToPlayerOffset;
 
     // 巡逻边界等待
     private bool isBoundaryWaiting = false;
@@ -91,8 +94,10 @@ public class MonsterController : MonoBehaviour
     {
         if (!canMove) return;
 
-        float distToPlayer = player ? Vector2.Distance(transform.position, player.position) : Mathf.Infinity;
-        EnemyState targetState = EvaluateState(distToPlayer);
+        float offset = transform.localScale.x * detectionBia;
+        detectionOrigin = transform.position + new Vector3(offset, 0f, 0f);
+        distToPlayerOffset = player ? Vector2.Distance(detectionOrigin, player.position) : Mathf.Infinity;
+        EnemyState targetState = EvaluateState(distToPlayerOffset);
 
         // 状态切换（受锁控制）
         if (!isStateLocked)
@@ -332,10 +337,8 @@ public class MonsterController : MonoBehaviour
         // 检查退出条件（仅在非减速时检查，减速中已决定退出，避免重复）
         if (!isDecelerating)
         {
-            float distToPlayer = Vector2.Distance(transform.position, player.position);
-            if (distToPlayer > effectiveDetectionRange || HasReachedBoundary())
+            if (distToPlayerOffset > effectiveDetectionRange || HasReachedBoundary())
             {
-                // 开始减速
                 StartDecelerating();
             }
         }
@@ -532,8 +535,10 @@ public class MonsterController : MonoBehaviour
         }
 
         // 2. 绘制怪物自身的检测范围（红色线框）
+        float offset = transform.localScale.x * detectionBia;
+        Vector3 detectionOrigin = transform.position + new Vector3(offset, 0f, 0f);
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        Gizmos.DrawWireSphere(detectionOrigin, detectionRange);
 
 
 

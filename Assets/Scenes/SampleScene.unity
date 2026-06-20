@@ -7161,7 +7161,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1525788179759293857, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: detectionRange
-      value: 11
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 1525788179759293857, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: accelerationTime
