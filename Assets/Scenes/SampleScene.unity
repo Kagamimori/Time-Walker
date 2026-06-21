@@ -5378,7 +5378,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 957547528}
         m_TargetAssemblyTypeName: Enemy, Assembly-CSharp
-        m_MethodName: TriggerHitEffect
+        m_MethodName: Die
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5574,6 +5574,8 @@ MonoBehaviour:
   effectConfigs:
   - effectMaterial: {fileID: 2100000, guid: 0097262b608db4b46b82fb04e4fafb19, type: 2}
     duration: 0.12
+  - effectMaterial: {fileID: 2100000, guid: bdf30e0044f674f4594af206418d20f0, type: 2}
+    duration: 0.7
 --- !u!1 &962110466
 GameObject:
   m_ObjectHideFlags: 0
@@ -6597,10 +6599,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gem
       objectReference: {fileID: 0}
-    - target: {fileID: 599925818006014188, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2780011608991559059, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
       propertyPath: m_LocalPosition.x
       value: -39
@@ -6640,6 +6638,14 @@ PrefabInstance:
     - target: {fileID: 2780011608991559059, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3211975975905186005, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
+      propertyPath: gravity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3211975975905186005, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
+      propertyPath: groundY
+      value: 0.27
       objectReference: {fileID: 0}
     - target: {fileID: 3211975975905186005, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
       propertyPath: maxSpeed
@@ -6940,7 +6946,7 @@ PrefabInstance:
       objectReference: {fileID: 718323627}
     - target: {fileID: 3129181351490543364, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -31.86
+      value: -44.15
       objectReference: {fileID: 0}
     - target: {fileID: 3129181351490543364, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: m_LocalPosition.y
@@ -6977,6 +6983,18 @@ PrefabInstance:
     - target: {fileID: 3129181351490543364, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
+      propertyPath: gemPrefab
+      value: 
+      objectReference: {fileID: 599925818006014188, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
+    - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
+      propertyPath: gemGroundOffset
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
+      propertyPath: gemInitialUpSpeed
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5667136806930373962, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: m_Materials.Array.data[0]

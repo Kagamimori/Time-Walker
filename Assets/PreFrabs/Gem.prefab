@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2780011608991559059}
   - component: {fileID: 6614750363237687573}
   - component: {fileID: 3211975975905186005}
+  - component: {fileID: 4367477213043722154}
   m_Layer: 0
   m_Name: Gem
   m_TagString: Untagged
@@ -97,8 +98,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7158fa5df92229b49987b3eda01a1b13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attractDistance: 2
-  maxSpeed: 5
+  attractoffsetY: 0.7
+  attractDistance: 8.01
+  maxSpeed: 11
   minSpeed: 0.5
-  wobbleSpeed: 2.4
+  wobbleSpeed: 3
+  amplitude: 0.12
   value: 1
+  gravity: 15
+  groundY: 0
+--- !u!70 &4367477213043722154
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 599925818006014188}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0.03125, y: 0.5}
+  m_Size: {x: 0.8125, y: 1}
+  m_Direction: 0

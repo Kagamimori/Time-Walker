@@ -17,6 +17,11 @@ public class Enemy : MonoBehaviour
     private bool isStunned = false;
     private bool isInvincible = false;
 
+    [Header("宝石掉落")]
+    public GameObject gemPrefab;            // 宝石预制体
+    public float gemInitialUpSpeed = 6f;    // 初始上抛速度
+    public float gemGroundOffset = 0f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
+
 
     private Coroutine invincibleCoroutine;
 
@@ -70,27 +75,45 @@ public class Enemy : MonoBehaviour
             enemyController.enabled = true;
     }
 
-    void Die()
+    public void Die()
     {
         StopAllCoroutines();
         if (enemyController != null)
-            enemyController.enabled = false;  //停脚本
+            enemyController.enabled = false;
 
-        anim.SetTrigger("Die");
+        if (hitEffectController != null)
+            hitEffectController.TriggerHitEffect(1);
         foreach (var col in GetComponents<Collider2D>())
-            col.enabled = false;  //关碰撞
+            col.enabled = false;
 
         rb.velocity = Vector2.zero;
         rb.isKinematic = true;
 
-        this.enabled = false; //停脚本
-        // 延迟销毁（等死亡动画播完）
-        Destroy(gameObject, 1f);
+        // ---- 生成宝石 ----
+        if (gemPrefab != null)
+        {
+            // 实例化宝石在怪物位置
+            GameObject gemObj = Instantiate(gemPrefab, transform.position, Quaternion.identity);
+            Gem gem = gemObj.GetComponent<Gem>();
+            if (gem != null)
+            {
+                // 计算地面Y：怪物位置Y + 偏移（可根据需求调整）
+                float groundY = transform.position.y + gemGroundOffset;
+                gem.Initialize(groundY, gemInitialUpSpeed);
+            }
+            else
+            {
+                Debug.LogWarning("宝石预制体缺少 Gem 组件！");
+            }
+        }
+
+        this.enabled = false;
+        Destroy(gameObject, 0.15f);
     }
     public void TriggerHitEffect()
     {
         if (hitEffectController != null)
-            hitEffectController.TriggerHitEffect();
+            hitEffectController.TriggerHitEffect(0);
     }
     void Update()
     {
