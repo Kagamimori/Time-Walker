@@ -105,8 +105,8 @@ MonoBehaviour:
   wobbleSpeed: 3
   amplitude: 0.12
   value: 1
-  gravity: 15
-  groundY: 0
+  gravity: 17
+  groundY: 1
 --- !u!70 &4367477213043722154
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

@@ -7,7 +7,7 @@ Shader "Custom/PixelDissolve"
         _PixelSize ("像素块大小", Range(1, 20)) = 4      // 基础像素块尺寸
         _DissolveThreshold ("溶解阈值", Range(0, 1)) = 0.5 // 溶解敏感度
         _EdgeColor ("边缘颜色", Color) = (1, 0.5, 0, 1)   // 溶解边缘发光色
-        _HitAmount ("消失进度", Range(0, 1)) = 0          // 外部控制（0=正常，1=完全消失）
+        _HitEffect ("Hit Effect Amount", Range(0, 1)) = 0       // 外部控制（0=正常，1=完全消失）
         [HideInInspector] _Flip ("Flip", Vector) = (1,1,1,1)
     }
 

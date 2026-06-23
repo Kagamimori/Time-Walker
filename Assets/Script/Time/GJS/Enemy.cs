@@ -20,7 +20,7 @@ public class Enemy : MonoBehaviour
     [Header("宝石掉落")]
     public GameObject gemPrefab;            // 宝石预制体
     public float gemInitialUpSpeed = 6f;    // 初始上抛速度
-    public float gemGroundOffset = 0f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
+    public float gemGroundOffset = -0.5f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
 
 
     private Coroutine invincibleCoroutine;
@@ -99,7 +99,10 @@ public class Enemy : MonoBehaviour
             {
                 // 计算地面Y：怪物位置Y + 偏移（可根据需求调整）
                 float groundY = transform.position.y + gemGroundOffset;
-                gem.Initialize(groundY, gemInitialUpSpeed);
+                // gem.Initialize(groundY, gemInitialUpSpeed);
+
+                gem.Initialize(1.35f, 8f); // 直接指定 groundY ,老是有bug，这里直接写死算了
+
             }
             else
             {
