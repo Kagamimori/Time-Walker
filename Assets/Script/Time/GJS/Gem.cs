@@ -56,7 +56,7 @@ public class Gem : MonoBehaviour
         basePosition = transform.position;
         initialPosition = transform.position;
 
-        Debug.Log($"【Initialize】传入 groundY = {groundY}, initialUpSpeed = {initialUpSpeed}");
+        // Debug.Log($"【Initialize】传入 groundY = {groundY}, initialUpSpeed = {initialUpSpeed}");
 
         Collider2D col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
@@ -122,7 +122,7 @@ public class Gem : MonoBehaviour
         // 调试初速度
         if (skipLandCheckFrames == 3)
         {
-            Debug.Log($"【上抛】初速度 = {verticalSpeed}, 生成Y = {basePosition.y}, groundY = {groundY}");
+            // Debug.Log($"【上抛】初速度 = {verticalSpeed}, 生成Y = {basePosition.y}, groundY = {groundY}");
         }
 
         // 跳过落地检测
@@ -163,7 +163,7 @@ public class Gem : MonoBehaviour
             {
                 verticalSpeed = 0f;
                 currentState = State.Attracting;
-                Debug.Log("Gem attracted during falling.");
+                // Debug.Log("Gem attracted during falling.");
             }
         }
     }
@@ -195,7 +195,7 @@ public class Gem : MonoBehaviour
         {
             currentState = State.Attracting;
             verticalSpeed = 0f;
-            Debug.Log("Gem attracted from Idle.");
+            // Debug.Log("Gem attracted from Idle.");
         }
     }
 
@@ -218,7 +218,7 @@ public class Gem : MonoBehaviour
         {
             currentState = State.Idle;
             verticalSpeed = 0f;
-            Debug.Log("Player left, returning to Idle.");
+            // Debug.Log("Player left, returning to Idle.");
         }
 
         float realDistance = Vector2.Distance(transform.position, targetPos);

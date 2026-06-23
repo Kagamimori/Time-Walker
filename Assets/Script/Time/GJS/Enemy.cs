@@ -20,7 +20,9 @@ public class Enemy : MonoBehaviour
     [Header("宝石掉落")]
     public GameObject gemPrefab;            // 宝石预制体
     public float gemInitialUpSpeed = 6f;    // 初始上抛速度
-    public float gemGroundOffset = -0.5f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
+    public float gemGroundOffset = 0.3f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
+    public float gemSpawnOffsetY = 0.5f; // 从怪物位置向上偏移
+
 
 
     private Coroutine invincibleCoroutine;
@@ -89,11 +91,14 @@ public class Enemy : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.isKinematic = true;
 
+
+
         // ---- 生成宝石 ----
         if (gemPrefab != null)
         {
             // 实例化宝石在怪物位置
-            GameObject gemObj = Instantiate(gemPrefab, transform.position, Quaternion.identity);
+            Vector3 spawnPos = new Vector3(transform.position.x, transform.position.y + gemSpawnOffsetY, transform.position.z);
+            GameObject gemObj = Instantiate(gemPrefab, spawnPos, Quaternion.identity);
             Gem gem = gemObj.GetComponent<Gem>();
             if (gem != null)
             {
@@ -101,7 +106,7 @@ public class Enemy : MonoBehaviour
                 float groundY = transform.position.y + gemGroundOffset;
                 // gem.Initialize(groundY, gemInitialUpSpeed);
 
-                gem.Initialize(1.35f, 8f); // 直接指定 groundY ,老是有bug，这里直接写死算了
+                gem.Initialize(groundY, gemInitialUpSpeed);
 
             }
             else
@@ -111,7 +116,7 @@ public class Enemy : MonoBehaviour
         }
 
         this.enabled = false;
-        Destroy(gameObject, 0.15f);
+        Destroy(gameObject, 2f);
     }
     public void TriggerHitEffect()
     {
