@@ -1,4 +1,4 @@
-Shader "Custom/CharacterHitShader_PixelUV"
+Shader "Custom/MonsterHitShader_PixelUV"
 {
     Properties
     {
@@ -67,27 +67,29 @@ Shader "Custom/CharacterHitShader_PixelUV"
             fixed4 frag (v2f i) : SV_Target
             {
                 float hitAmount = _HitEffect;
-                // float aspectRatio = _MainTex_TexelSize.z / _MainTex_TexelSize.w;
+                
                 
                 // 将 UV 原点移到中心，修正宽高比，再压缩
                 float2 uvCentered = i.texcoord - 0.5;
 
-                // uvCentered.x *= aspectRatio;
+                float compressCurve = pow(abs(uvCentered.x),1.5);
                 
-                float scaleX = 1.0 - hitAmount * (1.0 - _HitCompressScale);
+                float scaleX = 1 - hitAmount * compressCurve * (1.0 - _HitCompressScale) ; // X越大，扭曲越大
                 uvCentered.x *= scaleX;
                 float2 compressedUV = uvCentered + 0.5;
-                compressedUV.x = clamp(compressedUV.x, 0.0, 1.0);
+                // compressedUV.x = clamp(compressedUV.x, 0.0, 1.0);
     
                 // 采样纹理
                 fixed4 color = tex2D(_MainTex, compressedUV) * i.color;
+                fixed4 hitColor = fixed4(_HitFlashColor.r  * compressCurve * hitAmount + 0.05,_HitFlashColor.gba);
 
                 // 闪红
                 if (color.a > 0.01)
                 {
-                    color.rgb = lerp(color.rgb, _HitFlashColor.rgb, hitAmount);
+                    color.rgb = lerp(color.rgb, hitColor.rgb, hitAmount - 0.15);
                 }
-                // color.rgb *= IN.color.a;
+             
+    
                 return color;
             }
             
