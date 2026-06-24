@@ -7025,7 +7025,7 @@ PrefabInstance:
       objectReference: {fileID: 599925818006014188, guid: ca8f82ef3a308b14bb96cddbba2ab33e, type: 3}
     - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: gemSpawnDelay
-      value: 0.54
+      value: 0.48
       objectReference: {fileID: 0}
     - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: gemGroundOffset
@@ -7037,7 +7037,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3251711871259851496, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: gemInitialUpSpeed
-      value: 8
+      value: 8.2
       objectReference: {fileID: 0}
     - target: {fileID: 5667136806930373962, guid: bbd4988841bd4e74c85fe7ff0834d1d0, type: 3}
       propertyPath: m_Materials.Array.data[0]
