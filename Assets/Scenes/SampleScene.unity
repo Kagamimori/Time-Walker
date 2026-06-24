@@ -6851,7 +6851,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2150040993373006723, guid: 60b732029c4d07643bdbfcd69d3291c3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6.07
+      value: -1.15
       objectReference: {fileID: 0}
     - target: {fileID: 2150040993373006723, guid: 60b732029c4d07643bdbfcd69d3291c3, type: 3}
       propertyPath: m_LocalPosition.z
@@ -6888,6 +6888,14 @@ PrefabInstance:
     - target: {fileID: 4896251858551321987, guid: 60b732029c4d07643bdbfcd69d3291c3, type: 3}
       propertyPath: m_Name
       value: Grass
+      objectReference: {fileID: 0}
+    - target: {fileID: 4975211934460972362, guid: 60b732029c4d07643bdbfcd69d3291c3, type: 3}
+      propertyPath: m_Size.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6246193075812967394, guid: 60b732029c4d07643bdbfcd69d3291c3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.02
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
