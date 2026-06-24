@@ -7,23 +7,22 @@ public class Enemy : MonoBehaviour
     public int maxHealth = 3;
     private int currentHealth;
 
-    public float knockbackForce = 8f;       // 击退力度
-    public float stunTime = 0.3f;           // 受击硬直时间
+    public float knockbackForce = 8f;
+    public float stunTime = 0.3f;
 
     private Rigidbody2D rb;
     private Animator anim;
-    private MonsterController enemyController; //移动控制脚本
+    private MonsterController enemyController;
     private HitEffectController hitEffectController;
     private bool isStunned = false;
     private bool isInvincible = false;
 
     [Header("宝石掉落")]
-    public GameObject gemPrefab;            // 宝石预制体
-    public float gemInitialUpSpeed = 6f;    // 初始上抛速度
-    public float gemGroundOffset = 0.3f;      // 地面Y偏移（宝石落地的相对高度，例如-0.5表示落在怪物下方）
-    public float gemSpawnOffsetY = 0.5f; // 从怪物位置向上偏移
-
-
+    public GameObject gemPrefab;
+    public float gemInitialUpSpeed = 6f;
+    public float gemGroundOffset = 0.3f;      // 落地Y偏移（相对于怪物位置）
+    public float gemSpawnOffsetY = 0.5f;      // 生成Y偏移（相对于怪物位置）
+    public float gemSpawnDelay = 0.4f;        // ★ 新增：死亡后延迟多久生成宝石
 
     private Coroutine invincibleCoroutine;
 
@@ -33,42 +32,35 @@ public class Enemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         enemyController = GetComponent<MonsterController>();
-        hitEffectController = GetComponent<HitEffectController>();   // 获取特效组件
+        hitEffectController = GetComponent<HitEffectController>();
     }
-    public void TakeDamage(int damage, Transform attacker)//受击
+
+    public void TakeDamage(int damage, Transform attacker)
     {
         if (currentHealth <= 0 || isInvincible) return;
 
         currentHealth -= damage;
-        //isInvincible = true;
 
         if (hitEffectController != null)
             hitEffectController.TriggerHitEffect();
 
-        // 播放受击动画
-        //anim.SetTrigger("Hurt");
-        // 击退：向攻击者的反方向弹开
         Vector2 knockbackDirection = (transform.position - attacker.position).normalized;
         rb.velocity = new Vector2(knockbackDirection.x * knockbackForce, rb.velocity.y);
-        //rb.velocity = new Vector2(knockbackDirection.x * knockbackForce, knockbackForce * 0.5f); // 受击弹起
 
-        // 进入硬直状态（暂停移动逻辑）
         StartCoroutine(StunCoroutine());
 
-        // 检查死亡
         if (currentHealth <= 0)
         {
             Debug.Log(2);
             Die();
         }
-       
     }
-    
+
     IEnumerator StunCoroutine()
     {
         isStunned = true;
         if (enemyController != null)
-            enemyController.enabled = false;   // 暂停AI移动（脚本）
+            enemyController.enabled = false;
 
         yield return new WaitForSeconds(stunTime);
 
@@ -83,48 +75,51 @@ public class Enemy : MonoBehaviour
         if (enemyController != null)
             enemyController.enabled = false;
 
+        // 播放死亡特效（不恢复材质）
         if (hitEffectController != null)
-            hitEffectController.TriggerHitEffect(1);
+            hitEffectController.TriggerHitEffect(1, false);
+
+        // 禁用碰撞体
         foreach (var col in GetComponents<Collider2D>())
             col.enabled = false;
 
         rb.velocity = Vector2.zero;
         rb.isKinematic = true;
 
-
-
-        // ---- 生成宝石 ----
+        // ★ 延迟生成宝石
         if (gemPrefab != null)
         {
-            // 实例化宝石在怪物位置
-            Vector3 spawnPos = new Vector3(transform.position.x, transform.position.y + gemSpawnOffsetY, transform.position.z);
-            GameObject gemObj = Instantiate(gemPrefab, spawnPos, Quaternion.identity);
-            Gem gem = gemObj.GetComponent<Gem>();
-            if (gem != null)
-            {
-                // 计算地面Y：怪物位置Y + 偏移（可根据需求调整）
-                float groundY = transform.position.y + gemGroundOffset;
-                // gem.Initialize(groundY, gemInitialUpSpeed);
-
-                gem.Initialize(groundY, gemInitialUpSpeed);
-
-            }
-            else
-            {
-                Debug.LogWarning("宝石预制体缺少 Gem 组件！");
-            }
+            StartCoroutine(SpawnGemAfterDelay(gemSpawnDelay));
         }
 
         this.enabled = false;
-        Destroy(gameObject, 2f);
+        Destroy(gameObject, 0.93f);  // 销毁延时需大于宝石延迟 + 特效时长
     }
+
+    private IEnumerator SpawnGemAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // 生成在怪物位置 + Y偏移
+        Vector3 spawnPos = new Vector3(transform.position.x, transform.position.y + gemSpawnOffsetY, transform.position.z);
+        GameObject gemObj = Instantiate(gemPrefab, spawnPos, Quaternion.identity);
+        Gem gem = gemObj.GetComponent<Gem>();
+        if (gem != null)
+        {
+            float groundY = transform.position.y + gemGroundOffset;
+            gem.Initialize(groundY, gemInitialUpSpeed);
+        }
+        else
+        {
+            Debug.LogWarning("宝石预制体缺少 Gem 组件！");
+        }
+    }
+
     public void TriggerHitEffect()
     {
         if (hitEffectController != null)
             hitEffectController.TriggerHitEffect(0);
     }
-    void Update()
-    {
-        
-    }
+
+    void Update() { }
 }

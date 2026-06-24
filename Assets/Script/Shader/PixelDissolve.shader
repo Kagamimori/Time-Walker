@@ -7,7 +7,7 @@ Shader "Custom/PixelDissolve"
         _PixelSize ("像素块大小", Range(1, 20)) = 4      // 基础像素块尺寸
         _DissolveThreshold ("溶解阈值", Range(0, 1)) = 0.5 // 溶解敏感度
         _EdgeColor ("边缘颜色", Color) = (1, 0.5, 0, 1)   // 溶解边缘发光色
-        _HitAmount ("Hit Effect Amount", Range(0, 1)) = 0       // 外部控制
+        _HitEffect ("Hit Effect Amount", Range(0, 1)) = 0       // 外部控制
     }
 
     SubShader
@@ -56,7 +56,7 @@ Shader "Custom/PixelDissolve"
             float _PixelSize;
             float _DissolveThreshold;
             float4 _EdgeColor;
-            float _HitAmount;
+            float _HitEffect;
 
             v2f SpriteVert(appdata_t IN)
             {
@@ -67,10 +67,13 @@ Shader "Custom/PixelDissolve"
                 return OUT;
             }
 
+
             fixed4 frag(v2f IN) : SV_Target
             {
+
+
                 // 1. 像素扩大（马赛克）效果
-                float blockScale = lerp(_PixelSize * 2,_PixelSize,_HitAmount);
+                float blockScale = lerp(_PixelSize * 1.5,_PixelSize,_HitEffect);
 
                 float2 blockUV = _MainTex_TexelSize.xy * blockScale;
                 float2 blockCenter = floor(IN.texcoord / blockUV) * blockUV + blockUV * 0.5;
@@ -83,15 +86,16 @@ Shader "Custom/PixelDissolve"
                 // 2. 溶解效果
                 // 采样噪声纹理
                 float2 noiseUV = IN.texcoord * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
-                float noise = tex2D(_NoiseTex, noiseUV).r;
+                float noise = clamp(tex2D(_NoiseTex, noiseUV).r * 0.2f + (1-IN.texcoord.y) * 1.09f - fixed(0.64f),0,1); // 靠下面的消失更慢
                 // 溶解阈值：随 _HitAmount 减小，阈值增大，使更多像素被裁掉
-                float threshold = 1 - _HitAmount * (1.0 + _DissolveThreshold);
+                float threshold = clamp(1 - _HitEffect  * 1.2,0,1.3) ;
                 clip(noise - threshold);
+                // * (1 + _DissolveThreshold)
 
                 // 3. 溶解边缘发光
                 // 在即将被裁掉的边缘（噪声值接近阈值）增加发光色
-                float edgeGlow = smoothstep(0.7 , 1 , threshold);
-                fixed3 finalColor = fixed3(mainColor.r * 0.9 ,mainColor.gb * 0.55);
+                float edgeGlow = smoothstep(0.5 , 1 , threshold);
+                fixed3 finalColor = fixed3(mainColor.r * 0.83 ,mainColor.gb * 0.5);
                 float finalAlpha = mainColor.a;
                 // 发光颜色叠加（加色混合）
                 finalColor = lerp(finalColor, _EdgeColor.rgb, edgeGlow * 0.8);

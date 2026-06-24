@@ -45,15 +45,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DissolveThreshold: 0
+    - _DissolveThreshold: 0.52
     - _EnableExternalAlpha: 0
     - _HitAmount: 1
     - _HitCompressScale: 0.879
-    - _HitEffect: 1
+    - _HitEffect: 0.63
     - _PixelSize: 2
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EdgeColor: {r: 0.8537736, g: 0.55978554, b: 0.55978554, a: 0.15686275}
+    - _EdgeColor: {r: 0.1273585, g: 0.0030037377, b: 0.0030037377, a: 0.15686275}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
     - _HitFlashColor: {r: 1, g: 0, b: 0, a: 0.9607843}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
