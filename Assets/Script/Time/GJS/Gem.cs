@@ -26,7 +26,7 @@ public class Gem : MonoBehaviour
     private bool isCollected = false;
     private float landTime;
     private float floatEaseInDuration = 0.3f;
-
+    private bool isInitialized = false;
     private Vector3 basePosition;
     private Vector3 initialPosition;
 
@@ -61,6 +61,7 @@ public class Gem : MonoBehaviour
         Collider2D col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
             col.isTrigger = true;
+        isInitialized = true;
     }
 
     private void Start()
@@ -76,7 +77,18 @@ public class Gem : MonoBehaviour
             Debug.LogError("未找到 Tag 为 'Player' 的游戏对象！");
         }
 
-        // 不覆盖 Initialize 设置的 groundY
+        // ★ 如果未通过 Initialize 初始化，则设为直接放置模式（待机状态）
+        if (!isInitialized)
+        {
+            groundY = transform.position.y;
+            basePosition = transform.position;
+            currentState = State.Idle;
+            landTime = Time.time; // 启用浮动
+
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null && !col.isTrigger)
+                col.isTrigger = true;
+        }
     }
 
     private void Update()
