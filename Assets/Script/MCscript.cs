@@ -489,6 +489,6 @@ public class MCscript : MonoBehaviour
     {
         if (hitEffectController != null)
             hitEffectController.TriggerHitEffect(1);
-
+        playerManager.PlayerMP += value;
     }
 }

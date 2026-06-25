@@ -104,7 +104,7 @@ MonoBehaviour:
   minSpeed: 0.5
   wobbleSpeed: 3
   amplitude: 0.12
-  value: 1
+  value: 33
   gravity: 20
   groundY: 0.8
 --- !u!70 &4367477213043722154

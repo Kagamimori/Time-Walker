@@ -5,7 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
 
-public class Stone : MonoBehaviour, IDamagableE, ITimeControlable
+public class Stone1 : MonoBehaviour, ITimeControlable
 {
     public bool CanReserveTime { get; set; }
     private MCscript MC;
@@ -73,7 +73,7 @@ public class Stone : MonoBehaviour, IDamagableE, ITimeControlable
         }
     }
 
-    public void DieOut()
+    public void DieOut(int d)
     {
         if (IsTimeReserving||IsBite)
         {
@@ -83,15 +83,14 @@ public class Stone : MonoBehaviour, IDamagableE, ITimeControlable
         {
             StopCoroutine(BiteCorotine);
         }
-        BiteCorotine = StartCoroutine(Bite());
+        BiteCorotine = StartCoroutine(Bite( d));
     }
-    IEnumerator Bite()
+    IEnumerator Bite(int d)
     {
         IsBite = true;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         IsTimeReserving = false;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        float BiteDirection = MC.BiteDirection;
+        float BiteDirection = d;
         if (BiteDirection == 1)
         {
             //rb.velocity = new Vector2(0, BiteOutSpeed);

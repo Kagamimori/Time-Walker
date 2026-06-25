@@ -14,7 +14,7 @@ public class Gem : MonoBehaviour
     public float amplitude = 0.12f;
 
     [Header("补充能量值")]
-    public int value = 1;
+    public int value = 33;
 
     [Header("重力参数")]
     public float gravity = 15f;
