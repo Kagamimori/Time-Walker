@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-
+// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 public class Bridge2 : MonoBehaviour, ITimeControlable
 {
     // ----- 原有属性（保留）-----
