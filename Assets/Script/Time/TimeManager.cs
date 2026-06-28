@@ -26,15 +26,21 @@ public class TimeManager : MonoBehaviour
         }
 
     }
-    // Start is called before the first frame update
     void Start()
     {
         mainCamera = Camera.main;
     }
 
-    // Update is called once per frame
     void Update()
     {
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                return;
+            }
+        }
         Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         if (Input.GetMouseButton(0))
         {
@@ -47,7 +53,7 @@ public class TimeManager : MonoBehaviour
                     {
                         timeControlable.ChangeCurrentTime(-Time.deltaTime);
                         IsTimeReversing = true;
-                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP-Time.deltaTime * MPConsumeRate;
+                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP - Time.deltaTime * MPConsumeRate;
                     }
                 }
                 else if (Input.GetKey(KeyCode.E))
@@ -57,7 +63,7 @@ public class TimeManager : MonoBehaviour
                     {
                         timeControlable.ChangeCurrentTime(Time.deltaTime);
                         IsTimeReversing = true;
-                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP-Time.deltaTime * MPConsumeRate;
+                        PlayerManager.Instance.PlayerMP = PlayerManager.Instance.PlayerMP - Time.deltaTime * MPConsumeRate;
                     }
                 }
                 else
@@ -77,10 +83,10 @@ public class TimeManager : MonoBehaviour
         }
         if (LastMouseHit.collider == null)
         {
-            if(MouseHit.collider != null)
+            if (MouseHit.collider != null)
             {
                 ITimeControlable timeControlable = MouseHit.collider.GetComponent<ITimeControlable>();
-                if(timeControlable != null)
+                if (timeControlable != null)
                 {
                     timeControlable.Lighten(true);
                 }
@@ -88,7 +94,7 @@ public class TimeManager : MonoBehaviour
         }
         else
         {
-            if(MouseHit.collider == null)
+            if (MouseHit.collider == null)
             {
                 ITimeControlable timeControlable = LastMouseHit.collider.GetComponent<ITimeControlable>();
                 if (timeControlable != null)

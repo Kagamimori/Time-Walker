@@ -69,6 +69,9 @@ public class MCscript : MonoBehaviour
     public bool IsHitStun = false;
     public float HitStunDuration = 0.3f;
     private float preHitFacing = 1; // 记录受击前的朝向
+    private GameUIManager uiManager; // 在Start中获取
+    private bool isDead = false;
+    private bool isWin = false;
 
     private HitEffectController hitEffectController; // 特效控制器
     // Start is called before the first frame update
@@ -84,6 +87,7 @@ public class MCscript : MonoBehaviour
         bool SB = Candash;//解除SB报错
 
         hitEffectController = GetComponent<HitEffectController>();
+        uiManager = FindObjectOfType<GameUIManager>();
     }
 
     void OnDestroy()
@@ -309,6 +313,7 @@ public class MCscript : MonoBehaviour
     /// </summary>
     private void UpdateCharacterFacing()
     {
+        if (isDead || isWin) return;
         // 受击时禁止改变朝向
         if (IsHitStun)
         {
@@ -453,28 +458,28 @@ public class MCscript : MonoBehaviour
     }
     public void TakeDamage(float damage)
     {
+        // 如果已经死亡，不再处理任何伤害
+        if (isDead) return;
+
         float currentHP = playerManager.PlayerHP;
-        if (currentHP - damage <= 0)
+        currentHP -= damage;
+        playerManager.PlayerHP = currentHP;
+
+        if (hitEffectController != null)
+            hitEffectController.TriggerHitEffect(0);
+
+        if (currentHP <= 0)
         {
-            Debug.LogError("Death");
-        }
-        else
-        {
-            playerManager.PlayerHP = currentHP - damage;
+            isDead = true;              // 立即标记为死亡
+            rb.simulated = false;
+            StartCoroutine(ShowDeathUIAfterDelay(0.3f));
+            return;
         }
 
-        // 记录受击前的朝向
         preHitFacing = LocalScaleLock;
-
         IsHitStun = true;
         Invoke(nameof(EndHitStun), HitStunDuration);
 
-        if (hitEffectController != null)
-        {
-            hitEffectController.TriggerHitEffect(0);
-        }
-
-        // 受击时锁定当前朝向
         LocalScaleLock = Math.Sign(transform.localScale.x);
         transform.localScale = ScaleRate * new Vector2(LocalScaleLock, 1);
     }
@@ -490,5 +495,16 @@ public class MCscript : MonoBehaviour
         if (hitEffectController != null)
             hitEffectController.TriggerHitEffect(1);
         playerManager.PlayerMP += value;
+    }
+    public void SetWinState(bool win)
+    {
+        isWin = win;
+    }
+    private IEnumerator ShowDeathUIAfterDelay(float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        if (uiManager != null)
+            uiManager.ShowDeathUI();
+        
     }
 }

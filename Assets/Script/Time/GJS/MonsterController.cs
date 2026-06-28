@@ -403,7 +403,7 @@ public class MonsterController : MonoBehaviour
     }
     #endregion
 
-    #region 碰撞处理
+    #region 碰撞伤害处理
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // 仅当处于Charge状态且碰到玩家时触发
@@ -503,7 +503,6 @@ public class MonsterController : MonoBehaviour
     public bool IsStateLocked => isStateLocked; // 只读访问锁定状态，主要可能用于takedamage作条件数据
     // 是否可移动（外部控制）
     [HideInInspector] public bool canMove = true;
-    #endregion
 
     private void OnDrawGizmosSelected() // scene窗口AB点绘制辅助
     {
@@ -549,4 +548,5 @@ public class MonsterController : MonoBehaviour
 
 
     }
+    #endregion
 }

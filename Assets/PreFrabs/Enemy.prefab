@@ -105,6 +105,11 @@ MonoBehaviour:
   maxHealth: 3
   knockbackForce: 8
   stunTime: 0.3
+  gemPrefab: {fileID: 0}
+  gemInitialUpSpeed: 6
+  gemGroundOffset: 0.3
+  gemSpawnOffsetY: 0.5
+  gemSpawnDelay: 0.4
 --- !u!114 &1525788179759293857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -139,7 +144,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   wallCheckDistance: 0.5
-  attackDamage: 10
+  attackDamage: 25
   playerLayer:
     serializedVersion: 2
     m_Bits: 128
